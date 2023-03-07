@@ -1,5 +1,5 @@
 # Janna Previsão do Tempo
-[Climatologiabot](https://t.me/climatologiabot) is an inline Telegram bot to keep your private messages hidden from prying eyes.
+[Climatologiabot](https://t.me/climatologiabot) é um bot inline que busca  a previsão do tempo da sua cidade
 
 [![]([https://img.shields.io/badge/telegram-@hidethisbot-blue](https://img.shields.io/badge/telegram-@climatologiabot-1b2069))](https://t.me/climatologiabot) 
 [![]([https://i.imgur.com/gYCmw0k.png](https://i1.wp.com/streamie.com.br/wp-content/uploads/2017/09/img-janna-skin-capa.png))](#)
