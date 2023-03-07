@@ -126,57 +126,7 @@ function getTemperatureEmoji(temperature) {
     
 
 
-bot.on('inline_query', function(msg) {
-  const query = msg.query;
-  const match = query.match(/^(\S+)\s+(\d+)$/i);
-  if (!match) {
-    return;
-  }
 
-  const city = match[1];
-  const days = parseInt(match[2]);
-
-  const url = `http://api.openweathermap.org/data/2.5/forecast/daily?q=${city}&cnt=${days}&units=metric&appid=${process.env.WEATHER_API_KEY}`;
-
-  request(url, function(error, response, body) {
-    if (error) {
-      console.log('Erro:', error);
-      bot.answerInlineQuery(msg.id, []);
-      return;
-    }
-    const data = JSON.parse(body);
-    if (data.cod !== '200') {
-      console.log('Erro:', data.message);
-      bot.answerInlineQuery(msg.id, []);
-      return;
-    }
-    const forecasts = data.list.map(function(item) {
-      const date = new Date(item.dt * 1000);
-      const dayOfWeek = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'][date.getDay()];
-      const dayNumber = date.getDate();
-      const month = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'][date.getMonth()];
-      return {
-        date: `${dayOfWeek}, ${dayNumber} de ${month}`,
-        temp: `${item.temp.day.toFixed(1)}°C`,
-        description: item.weather[0].description
-      };
-    });
-
-    const results = forecasts.map(function(forecast, index) {
-      return {
-        id: index.toString(),
-        type: 'article',
-        title: forecast.date,
-        description: `${forecast.temp} - ${forecast.description}`,
-        input_message_content: {
-          message_text: `Previsão do tempo para ${city} em ${forecast.date}:\n\nTemperatura: ${forecast.temp}\nDescrição: ${forecast.description}`
-        }
-      };
-    });
-
-    bot.answerInlineQuery(msg.id, results);
-  });
-});
 
 
 
