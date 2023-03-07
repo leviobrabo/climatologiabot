@@ -127,8 +127,63 @@ function getTemperatureEmoji(temperature) {
 
 
 
+bot.on('inline_query', async (query) => {
+  const queryText = query.query.trim().toLowerCase();
 
+  // Verifica se a consulta começa com o nome da cidade seguido de "8"
+  if (/^[a-z\s]+8$/.test(queryText)) {
+    const cityName = queryText.slice(0, -1);
+    const weatherData = await getWeatherData(cityName);
 
+    if (weatherData) {
+      const results = [];
+
+      for (let i = 0; i < 8; i++) {
+        const date = new Date(weatherData.daily[i].dt * 1000);
+        const dayOfWeek = getDayOfWeek(date.getDay());
+        const dayOfMonth = date.getDate();
+        const weatherDescription = weatherData.daily[i].weather[0].description;
+        const temperature = Math.round(weatherData.daily[i].temp.day);
+
+        const result = {
+          type: 'article',
+          id: i.toString(),
+          title: `${dayOfWeek}, ${dayOfMonth}`,
+          description: `${weatherDescription}, ${temperature}°C`,
+          input_message_content: {
+            message_text: `${dayOfWeek}, ${dayOfMonth}: ${weatherDescription}, ${temperature}°C`
+          }
+        };
+
+        results.push(result);
+      }
+
+      bot.answerInlineQuery(query.id, results);
+    }
+  }
+});
+
+// Obtém os dados do tempo para a cidade
+async function getWeatherData(cityName) {
+  try {
+    const response = await axios.get(`https://api.openweathermap.org/data/2.5/weather?q=${cityName}&appid=${process.env.WEATHER_API_KEY}&units=metric&lang=pt&country=BR&cnt=50`);
+    const lat = response.data.coord.lat;
+    const lon = response.data.coord.lon;
+
+    const weatherResponse = await axios.get(`https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&exclude=current,minutely,hourly&units=metric&appid=${process.env.WEATHER_API_KEY}&units=metric&lang=pt&country=BR&cnt=50`);
+
+    return weatherResponse.data;
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+}
+
+// Obtém o nome do dia da semana
+function getDayOfWeek(dayNumber) {
+  const daysOfWeek = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+  return daysOfWeek[dayNumber];
+}
 
 
 
