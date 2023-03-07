@@ -135,7 +135,8 @@ function getTemperatureEmoji(temperature) {
 
   // Responder ao comando /start
 bot.onText(/\/start/, (msg) => {
-    const chatId = msg.chat.id;
+  if (msg.chat.type === 'private') {
+  const chatId = msg.chat.id;
   
     bot.sendPhoto(chatId, 'https://i1.wp.com/streamie.com.br/wp-content/uploads/2016/11/img-janna-capa.jpg', {
       caption: 'Olá, sou Janna! \n\nSou um bot que te envia os dados de previsão do tempo da sua cidade.😄! \n\n*Sou um bot INLINE, ou seja, não precisa me pôr no seu grupo.* Basta escrever meu username dessa forma `@climatologiabot` e logo em seguida o nome da sua cidade. Fique tranquilo, as informações são ocultadas para os demais. 🤝 \n\nVocê também pode pesquisar a previsão do tempo diretamente no meu privado😉 \n\nPor questões de privacidade, ocultamos o nome da sua cidade.',
@@ -150,6 +151,7 @@ bot.onText(/\/start/, (msg) => {
       },
       parse_mode: 'Markdown'
     });
+      }
   });
   
 
