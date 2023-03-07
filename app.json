@@ -17,7 +17,7 @@
       "required": true
     },
     "WEATHER_API_KEY": {
-      "description": "Api do weather key em https://openweathermap.org/api go.",
+      "description": "Api do weather key em https://openweathermap.org/api",
       "value": "",
       "required": true
     }
