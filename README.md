@@ -12,7 +12,7 @@ Você vai precisar ter instalado em sua máquina as seguintes ferramentas:
 
 - [Git](https://git-scm.com)
 - [Node.js](https://nodejs.org/en/)
-
+- [Vscode](https://code.visualstudio.com/docs/?dv=win)
 
 ### 🤖 Deploy no Heroku
 
