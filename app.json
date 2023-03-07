@@ -1,0 +1,25 @@
+{
+  "name": "Climatologiabot",
+  "description": "'Janna' é um bot inline que envia previsão do tempo.",
+  "repository": "https://github.com/leviobrabo/climatologiabot",
+  "logo": "https://i1.wp.com/streamie.com.br/wp-content/uploads/2017/09/img-janna-skin-capa.png",
+  "keywords": [
+    "node",
+    "wheaterbot",
+    "telegrambot"
+  ],
+  "website": "https://github.com/leviobrabo/climatologiabot",
+  "success_url": "https://t.me/climatologiabot",
+  "env": {
+    "TELEGRAM_BOT_TOKEN": {
+      "description": "Make a bot at BotFather http://telegram.dog/BotFather and get the token of your bot",
+      "value": "",
+      "required": true
+    },
+    "WEATHER_API_KEY": {
+      "description": "Api do weather key em https://openweathermap.org/api go.",
+      "value": "",
+      "required": true
+    }
+  }
+}
