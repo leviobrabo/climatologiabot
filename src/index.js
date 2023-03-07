@@ -39,7 +39,9 @@ bot.on('inline_query', async (query) => {
       const humidity = weatherData.main.humidity;
       const emoji = getTemperatureEmoji(temperature);
       const countryCode = weatherData.sys.country || "";
-      const horarioPesquisa = new Date().toLocaleString(); // cria constante com o horário da pesquisa
+      const now = new Date();
+      const horarioPesquisa = now.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+
       
       
   
