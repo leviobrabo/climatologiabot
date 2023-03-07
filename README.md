@@ -2,7 +2,9 @@
 [Climatologiabot](https://t.me/climatologiabot) é um bot inline que busca  a previsão do tempo da sua cidade
 
 [![](https://img.shields.io/badge/telegram-@climatologiabot-1b2069)](https://t.me/climatologiabot)
-[![](https://i1.wp.com/streamie.com.br/wp-content/uploads/2017/09/img-janna-skin-capa.png)](#)
+[![](https://img.shields.io/badge/suporte-@kylorensbot-1b2069)](https://t.me/kylorensbot)
+
+[![](https://i.imgur.com/VvYn6Pp.png)](#)
 
 ### Pré-requisitos
 
