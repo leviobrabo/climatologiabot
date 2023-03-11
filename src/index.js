@@ -201,38 +201,4 @@ bot.onText(/\/start/, (msg) => {
 
 
 
-bot.onText(/\/status/, async (msg) => {
-
-  if (msg.chat.type !== 'private') {
-
-    // Ignora o comando se não for em um chat privado
-
-    return
-
-  }
-
-  // Obtém a lista de chats que o bot faz parte
-
-  const chats = await bot.getMyChatMember()
-
-  const numGroups = chats.filter(chat => chat.status === 'member' && chat.chat.type === 'group').length
-
-  // Obtém a lista de usuários que enviaram mensagem para o bot
-
-  const updates = await bot.getUpdates({ limit: 100 })
-
-  const userIds = updates.map(update => update.message.from.id)
-
-  const uniqueUserIds = [...new Set(userIds)]
-
-  const numUsers = uniqueUserIds.length
-
-  // Cria a mensagem de resposta
-
-  const message = `──❑ 「 Bot Stats 」 ❑──\n\n ☆ ${numGroups}\n ☆ ${numUsers} usuários`
-
-  bot.sendMessage(msg.chat.id, message)
-
-})
-
   
