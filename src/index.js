@@ -1,6 +1,8 @@
 const TelegramBot = require('node-telegram-bot-api')
 const axios = require('axios');
 require('dotenv').config();
+const { UserModel } = require('./database')
+
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 
@@ -12,7 +14,6 @@ bot.on('inline_query', async (query) => {
    
     const cityName = query.query;
 
-    
     if (!cityName) {
         // Envia mensagem com instruções de uso do bot
         await bot.answerInlineQuery(query.id, [], {
@@ -25,9 +26,11 @@ bot.on('inline_query', async (query) => {
     }
   
     try {
+
       // Requisição para obter informações meteorológicas da cidade
       const response = await axios.get(`${weatherBaseUrl}?q=${cityName}&appid=${process.env.WEATHER_API_KEY}&units=metric&lang=pt&country=BR&cnt=50`);
-  
+      
+
   
       // Dados da resposta
       const weatherData = response.data;
@@ -44,8 +47,22 @@ bot.on('inline_query', async (query) => {
 
       
       
-  
-  
+       
+  let user = await UserModel.findOne({ userID: query.from.id });
+
+  // Se o usuário não estiver cadastrado, cria um novo registro no banco de dados
+  if (!user) {
+    user = new UserModel({
+      userID: query.from.id,
+      username: query.from.username,
+      inlineSearch: cityName
+    });
+    await user.save();
+  } else {
+    // Atualiza o campo inlineSearch com a nova pesquisa realizada pelo usuário
+    user.inlineSearch = cityName;
+    await user.save();
+  }
   
       // URL da imagem do ícone do tempo
       const weatherIconUrl = `http://openweathermap.org/img/wn/${weatherIconCode}.png`;
@@ -128,6 +145,21 @@ function getTemperatureEmoji(temperature) {
 
 
 
+// Comando /stats
+bot.onText(/\/stats/, async (msg, match) => {
+  try {
+    const count = await UserModel.countDocuments()
+    const message = `\n──❑ 「 Bot Stats 」 ❑──\n\n ☆ ${count} usuários`
+    bot.sendMessage(msg.chat.id, message)
+  } catch (error) {
+    console.error(error)
+    bot.sendMessage(msg.chat.id, 'Ocorreu um erro ao buscar as estatísticas do bot.')
+  }
+})
+
+bot.on('polling_error', (error) => {
+  console.error(error)
+})
 
 
 

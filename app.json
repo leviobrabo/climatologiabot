@@ -20,6 +20,11 @@
       "description": "Api do weather key em https://openweathermap.org/api",
       "value": "",
       "required": true
-    }
+    },
+    "DB_STRING": {
+      "description": "Create database ate MongoDB Atlas https://www.mongodb.com/ create new cluster and get url for connection.",
+      "value": "",
+      "required": true
+  }
   }
 }
