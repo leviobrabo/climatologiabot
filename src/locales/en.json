@@ -1,9 +1,9 @@
 {
-    "startMessage": "Hello! I'm Janna!\n\nI'm a weather forecast bot. \n\nYou can use me inline by typing the city name. Try typing `@climatologiabot name of your city` in any conversation. \n\nYou can also click on the buttons below for support or access another bot:",
+    "startMessage": "Hi, I'm Janna! \n\nI'm a bot that sends you your city's weather forecast data.😄! \n\n*I'm an INLINE bot, meaning you don't need to put me on your group.* Just write my username like this @climatologiabot and then the name of your city. Don't worry, the information is hidden from others. 🤝 \n\nYou can also search the weather forecast directly in my private account😉\n\nFor privacy reasons, we have hidden your city name.",
     "addGroup": "Add me in your group",
     "owner": "Owner",
     "language_set": "Your language has been set to English 🇺🇸\n\nType /start again",
-    "help_message": "Hello! I am a weather forecast bot. \n\nYou can use me inline by typing the name of the city. Try typing `@climatologiabot name of your city` in any chat. \n\nYou can also clic°F on the buttons below to get support or access another bot:",
+    "help_message": "Hello! I'm a weather bot. \n\nYou can use me inline by typing the city name. Try typing @climatologiabot your city name in any conversation. \n\nYou can also click on the buttons below to get support or access another bot:",
     "support_group_button": "Support Group",
     "support_button": "Contact Support",
     "langMessage": "Choose a language",
@@ -11,13 +11,14 @@
     "chooseLangMessage": "Choose a language",
     "langChangedMessage": "Your language has been set to English 🇺🇸",
     "how_to_use": "How to use",
-    "weather_forecast_message": "*Weather forecast for your city {{emoji}} * \n\n*🌡️ Temperature:* {{temperature}}°F\n*🌤️ Description:* {{weatherDescription}} \n🏖 * Thermal sensation:* {{feelsLike}}°F\n💨 *Wind speed:* {{windSpeed}} mph \n💦 *Relative air humidity:* {{humidity}}% \n*🌎 Country: * {{countryCode}} \n\n*🔍 Retrieved at:* {{horarioPesquisa}} ",
-     "city_weather_forecast_message": "*Weather forecast for {{cityName}} {{emoji}} * \n\n*🏙️ City:* {{cityName}} \n*🌡️ Temperature:* {{temperature}}°F\n*🌤️ Description:* {{weatherDescription}} \n🏖 *Thermal sensation:* {{feelsLike}}°F\n💨 *Wind speed:* {{windSpeed}} mph \n💦 *Relative humidity ar:* {{humidity}}% \n*🌎 Country:* {{countryCode}} \n\n*🔍 Retrieved at:* {{horarioPesquisa}} ",
+    "weather_forecast_message": "*Weather forecast for your city {{emoji}} * \n\n*🌡️ Temperature:* {{temperature}}°F\n*🌤️ Description:* {{weatherDescription}} \n🏖 * Thermal sensation:* {{feelsLike}}°F\n💨 *Wind speed:* {{windSpeed}} mph \n💦 *Relative air humidity:* {{humidity}}% \n*🌎 Country: * {{countryCode}} \n\n*🔍Consulted at:* {{horarioFormatado}} (BRT) ",
+     "city_weather_forecast_message": "*Weather forecast for {{cityName}} {{emoji}} * \n\n*🏙️ City:* {{cityName}} \n*🌡️ Temperature:* {{temperature}}°F\n*🌤️ Description:* {{weatherDescription}} \n🏖 *Thermal sensation:* {{feelsLike}}°F\n💨 *Wind speed:* {{windSpeed}} mph \n💦 *Relative humidity ar:* {{humidity}}% \n*🌎 Country:* {{countryCode}} \n\n*🔍Consulted at:* {{horarioFormatado}} (BRT) ",
      "title_message_hidden": "Weather forecast for your city🌤️",
      "description_hidden": "See weather for {{cityName}} - {{countryCode}} \nNote: CITY NAME HIDDEN",
      "title_message_visible": "Weather forecast for your city🌤️",
      "description_visible": "See weather for {{cityName}} - {{countryCode}} \nNote: CITY NAME VISIBLE",
      "erro_message": "Unable to get weather forecast. Please try again later.",
      "title_error": "Oops! An error occurred",
-     "description_error": "Unable to get weather forecast."
+     "description_error": "Unable to get weather forecast.",
+     "startlanguptdate": "Start"
   }

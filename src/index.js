@@ -12,14 +12,13 @@ const token = process.env.TELEGRAM_BOT_TOKEN;
 const bot = new TelegramBot(token, { polling: true });// URL base da API do OpenWeatherMap
 
 i18n.configure({
-  locales: ['en', 'pt'], // Supported locales
+  locales: ['en', 'pt', 'ru'], // Supported locales
   directory: __dirname + '/locales', // Path to locale files
   defaultLocale: 'en', // Default locale
   queryParameter: 'lang', // Query parameter to set locale
   cookie: 'language', // Cookie to set locale
   indent: '  '
-})
-
+});
 
 const weatherBaseUrl = 'https://api.openweathermap.org/data/2.5/weather';
 // Função para buscar o idioma do usuário no banco de dados
@@ -58,10 +57,14 @@ bot.on('inline_query', async (query) => {
     if (userLanguage === 'pt') {
       units = 'metric';
       lang = 'pt';
+    } else if (userLanguage === 'ru') {
+      units = 'metric';
+      lang = 'ru';
     } else {
       units = 'imperial';
       lang = 'en';
     }
+    
     
 
     // Requisição para obter informações meteorológicas da cidade
@@ -79,9 +82,12 @@ bot.on('inline_query', async (query) => {
       const humidity = weatherData.main.humidity;
       const emoji = getTemperatureEmoji(temperature);
       const countryCode = weatherData.sys.country || "";
-      const horarioPesquisa = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+      const agora = new Date();
+      const horas = agora.getUTCHours();
+      const minutos = agora.getUTCMinutes();
+      const segundos = agora.getUTCSeconds();
 
-
+      const horarioFormatado = `${horas}h ${minutos}m ${segundos}s`;
 
       
       
@@ -91,8 +97,8 @@ bot.on('inline_query', async (query) => {
       const weatherIconUrl = `http://openweathermap.org/img/wn/${weatherIconCode}.png`;
   
       // Mensagem de resposta com a previsão do tempo
-      const message = i18n.__('weather_forecast_message', { emoji, temperature, weatherDescription, feelsLike, windSpeed, humidity, countryCode, horarioPesquisa });
-      const message1 = i18n.__('city_weather_forecast_message', { cityName: cityName.toUpperCase(), emoji, temperature, weatherDescription, feelsLike, windSpeed, humidity, countryCode, horarioPesquisa });
+      const message = i18n.__('weather_forecast_message', { emoji, temperature, weatherDescription, feelsLike, windSpeed, humidity, countryCode, horarioFormatado });
+      const message1 = i18n.__('city_weather_forecast_message', { cityName: cityName.toUpperCase(), emoji, temperature, weatherDescription, feelsLike, windSpeed, humidity, countryCode, horarioFormatado });
       const title_message_visible = i18n.__('title_message_visible');
       const description_visible = i18n.__('description_visible', { cityName: cityName, countryCode });
       const title_message_hidden = i18n.__('title_message_hidden');
@@ -220,16 +226,17 @@ bot.onText(/\/start/, async (msg) => {
 
   // Send message with two buttons for URL and choosing language
   bot.sendMessage(chatId, i18n.__('startMessage'), {
+    parse_mode: 'markdown',
     reply_markup: {
       inline_keyboard: [
         [
           {
             text: i18n.__('addGroup'),
-            url: 'https://example.com'
+            url: 'https://t.me/climatologiabot?startgroup=true'
           },
           {
             text: i18n.__('owner'),
-            url: 'https://example.com'
+            url: 'https://t.me/Kylorensbot'
           }
         ],
         [
@@ -266,6 +273,10 @@ bot.on('callback_query', async (callbackQuery) => {
             {
               text: '🇺🇸 English',
               callback_data: 'choose_english'
+            },
+            {
+              text: '🇷🇺 Русский',
+              callback_data: 'choose_russian'
             }
           ],
           [
@@ -291,21 +302,29 @@ bot.on('callback_query', async (callbackQuery) => {
 
     // Send message to confirm language change
     await bot.answerCallbackQuery(callbackQuery.id, { text: i18n.__('langChangedMessage') });
+  } else if (callbackQuery.data === 'choose_russian') {
+    // Update user language in the database
+    const user = await UserModel.findOneAndUpdate({ userID: callbackQuery.from.id }, { lang: 'ru' }, { new: true });
+    i18n.setLocale(user.lang);
+
+    // Send message to confirm language change
+    await bot.answerCallbackQuery(callbackQuery.id, { text: i18n.__('langChangedMessage') });
   } else if (callbackQuery.data === 'back_to_start') {
     // Send message with two buttons for URL and choosing language
     await bot.editMessageText(i18n.__('startMessage'), {
       chat_id: chatId,
       message_id: messageId,
+      parse_mode: 'markdown',
       reply_markup: {
         inline_keyboard: [
           [
             {
               text: i18n.__('addGroup'),
-              url: 'https://example.com'
+              url: 'https://t.me/climatologiabot?startgroup=true'
             },
             {
               text: i18n.__('owner'),
-              url: 'https://example.com'
+              url: 'https://t.me/Kylorensbot'
             }
           ],
           [
@@ -332,6 +351,7 @@ bot.onText(/\/lang/, (msg) => {
 
   // Send message with language options to choose
   bot.sendMessage(chatId, i18n.__('chooseLanguage'), {
+    parse_mode: 'markdown',
     reply_markup: {
       inline_keyboard: [
         [
@@ -342,6 +362,16 @@ bot.onText(/\/lang/, (msg) => {
           {
             text: '🇧🇷 Português',
             callback_data: 'choose_portuguese'
+          },
+          {
+            text: '🇷🇺 Русский',
+            callback_data: 'choose_russian'
+          }
+        ],
+        [
+          {
+            text: i18n.__('startlanguptdate'),
+            callback_data: 'back_to_start'
           }
         ]
       ]
