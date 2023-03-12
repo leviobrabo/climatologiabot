@@ -2,22 +2,48 @@ const TelegramBot = require('node-telegram-bot-api')
 const axios = require('axios');
 require('dotenv').config();
 const { UserModel } = require('./database')
+const i18n = require('i18n');
+
 
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 
 
 const bot = new TelegramBot(token, { polling: true });// URL base da API do OpenWeatherMap
+
+i18n.configure({
+  locales: ['en', 'pt'], // Supported locales
+  directory: __dirname + '/locales', // Path to locale files
+  defaultLocale: 'en', // Default locale
+  queryParameter: 'lang', // Query parameter to set locale
+  cookie: 'language', // Cookie to set locale
+  indent: '  '
+})
+
+
 const weatherBaseUrl = 'https://api.openweathermap.org/data/2.5/weather';
+// Função para buscar o idioma do usuário no banco de dados
+async function getUserLanguage(userId) {
+  const user = await UserModel.findOne({ userID: userId });
+
+  if (!user) {
+    // Usuário não encontrado, retorna o idioma padrão
+    return i18n.defaultLocale();
+  }
+
+  return user.lang;
+}
+
 // Tratamento da query do usuário
 bot.on('inline_query', async (query) => {
-   
+    const userId = query.from.id;
+    const userLanguage = await getUserLanguage(userId);
     const cityName = query.query;
 
     if (!cityName) {
         // Envia mensagem com instruções de uso do bot
         await bot.answerInlineQuery(query.id, [], {
-          switch_pm_text: 'Como usar o bot',
+          switch_pm_text:  i18n.__('how_to_use'),
           switch_pm_parameter: 'how_to_use',
           cache_time: 0
         });
@@ -26,12 +52,23 @@ bot.on('inline_query', async (query) => {
     }
   
     try {
+    let units = '';
+    let lang = '';
 
-      // Requisição para obter informações meteorológicas da cidade
-      const response = await axios.get(`${weatherBaseUrl}?q=${cityName}&appid=${process.env.WEATHER_API_KEY}&units=metric&lang=pt&country=BR&cnt=50`);
-      
+    if (userLanguage === 'pt') {
+      units = 'metric';
+      lang = 'pt';
+    } else {
+      units = 'imperial';
+      lang = 'en';
+    }
+    
 
-  
+    // Requisição para obter informações meteorológicas da cidade
+    const response = await axios.get(`${weatherBaseUrl}?q=${cityName}&appid=${process.env.WEATHER_API_KEY}&units=${units}&lang=${lang}`);
+    
+    i18n.setLocale(lang);
+
       // Dados da resposta
       const weatherData = response.data;
       const temperature = Math.round(weatherData.main.temp);
@@ -42,52 +79,44 @@ bot.on('inline_query', async (query) => {
       const humidity = weatherData.main.humidity;
       const emoji = getTemperatureEmoji(temperature);
       const countryCode = weatherData.sys.country || "";
-      const now = new Date();
-      const horarioPesquisa = now.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+      const horarioPesquisa = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+
+
 
       
       
        
-  let user = await UserModel.findOne({ userID: query.from.id });
-
-  // Se o usuário não estiver cadastrado, cria um novo registro no banco de dados
-  if (!user) {
-    user = new UserModel({
-      userID: query.from.id,
-      username: query.from.username,
-      inlineSearch: cityName
-    });
-    await user.save();
-  } else {
-    // Atualiza o campo inlineSearch com a nova pesquisa realizada pelo usuário
-    user.inlineSearch = cityName;
-    await user.save();
-  }
   
       // URL da imagem do ícone do tempo
       const weatherIconUrl = `http://openweathermap.org/img/wn/${weatherIconCode}.png`;
   
       // Mensagem de resposta com a previsão do tempo
-      const message = `*Previsão do tempo para sua cidade ${emoji} * \n\n*🌡️ Temperatura:* ${temperature}°C\n*🌤️ Descrição:* ${weatherDescription} \n🏖 *Sensação térmica:* ${feelsLike}°C\n💨 *Velocidade do vento:* ${windSpeed} km/h \n💦 *Umidade relativa do ar:* ${humidity}% \n*🌎 País:* ${countryCode} \n\n*🔍 Consultado em:* ${horarioPesquisa} `;
-      const message1 = `*Previsão do tempo para ${cityName.toUpperCase()} ${emoji} * \n\n*🏙️ Cidade:* ${cityName} \n*🌡️ Temperatura:* ${temperature}°C\n*🌤️ Descrição:* ${weatherDescription} \n🏖 *Sensação térmica:* ${feelsLike}°C\n💨 *Velocidade do vento:* ${windSpeed} km/h \n💦 *Umidade relativa do ar:* ${humidity}% \n*🌎 País:* ${countryCode} \n\n*🔍 Consultado em:* ${horarioPesquisa} `;
-    
+      const message = i18n.__('weather_forecast_message', { emoji, temperature, weatherDescription, feelsLike, windSpeed, humidity, countryCode, horarioPesquisa });
+      const message1 = i18n.__('city_weather_forecast_message', { cityName: cityName.toUpperCase(), emoji, temperature, weatherDescription, feelsLike, windSpeed, humidity, countryCode, horarioPesquisa });
+      const title_message_visible = i18n.__('title_message_visible');
+      const description_visible = i18n.__('description_visible', { cityName: cityName, countryCode });
+      const title_message_hidden = i18n.__('title_message_hidden');
+      const description_hidden = i18n.__('description_hidden', { cityName: cityName, countryCode });
+
+
+
 // Resultado da query com a mensagem e a imagem
 const result = [{
-    type: 'article',
-    id: '1',
-    title: `Previsão do tempo para sua cidade🌤️`,
-    description: `Veja o clima de ${cityName} - ${weatherData.sys.country} \nObs.: NOME DA CIDADE OCULTADA`,
-    input_message_content: {
-      message_text: message,
-      parse_mode: 'Markdown' // Adicionando parse_mode como Markdown
-    },
-    thumb_url: weatherIconUrl,
+  type: 'article',
+  id: '1',
+  title: title_message_hidden,
+  description: description_hidden,
+  input_message_content: {
+    message_text: message,
+    parse_mode: 'Markdown' // Adicionando parse_mode como Markdown
   },
-  {  
-      type: 'article',
+  thumb_url: weatherIconUrl,
+},
+  {
+    type: 'article',
     id: '2',
-    title: `Previsão do tempo para sua cidade🌤️`,
-    description: `Veja o clima de ${cityName} - ${weatherData.sys.country} \nObs.: NOME DA CIDADE VÍSIVEL`,
+    title: title_message_visible,
+    description: description_visible,
     input_message_content: {
       message_text: message1,
       parse_mode: 'Markdown' // Adicionando parse_mode como Markdown
@@ -95,29 +124,30 @@ const result = [{
     thumb_url: weatherIconUrl,
   }
 
-  ];
+];
 
-  // Envio do resultado da query
-  bot.answerInlineQuery(query.id, result);
-  console.log(result);
+// Envio do resultado da query
+bot.answerInlineQuery(query.id, result);
+console.log(result);
 } catch (error) {
-  console.log(error)
+console.log(error)
 
-  // Caso ocorra algum erro na requisição, envia uma mensagem de erro para o usuário
-  const errorMessage = 'Não foi possível obter a previsão do tempo. Por favor, tente novamente mais tarde.';
-  const errorResult = [{
-    type: 'article',
-    id: '3',
-    title: 'Ops! Ocorreu um erro',
-    description: `Não foi possível obter a previsão do tempo.`,
-    input_message_content: {
-      message_text: `Não foi possível obter a previsão do tempo. Por favor, tente novamente mais tarde.`,
-    },
-    thumb_url: 'https://e7.pngegg.com/pngimages/804/92/png-clipart-computer-icons-error-exit-miscellaneous-trademark.png',
-  }];
+// Caso ocorra algum erro na requisição, envia uma mensagem de erro para o usuário
+const errorMessage = i18n.__('erro_message');
+const errorResult = [{
+  type: 'article',
+  id: '3',
+  title: i18n.__('title_error'),
+  description: i18n.__('description_error'),
+  input_message_content: {
+    message_text: errorMessage,
+  },
+  thumb_url: 'https://e7.pngegg.com/pngimages/804/92/png-clipart-computer-icons-error-exit-miscellaneous-trademark.png',
+}];
 
-  bot.answerInlineQuery(query.id, errorResult);
+bot.answerInlineQuery(query.id, errorResult);
 }
+
 });
 
 function getTemperatureEmoji(temperature) {
@@ -165,72 +195,191 @@ bot.on('polling_error', (error) => {
 
 
 
+bot.onText(/\/start/, async (msg) => {
+  if (msg.chat.type !== "private") {
+    return;
+  }
 
-
-  // Responder ao comando /start
-bot.onText(/\/start/, (msg) => {
-  if (msg.chat.type === 'private') {
   const chatId = msg.chat.id;
-  
-    bot.sendPhoto(chatId, 'https://i1.wp.com/streamie.com.br/wp-content/uploads/2016/11/img-janna-capa.jpg', {
-      caption: 'Olá, sou Janna! \n\nSou um bot que te envia os dados de previsão do tempo da sua cidade.😄! \n\n*Sou um bot INLINE, ou seja, não precisa me pôr no seu grupo.* Basta escrever meu username dessa forma `@climatologiabot` e logo em seguida o nome da sua cidade. Fique tranquilo, as informações são ocultadas para os demais. 🤝 \n\nVocê também pode pesquisar a previsão do tempo diretamente no meu privado😉 \n\nPor questões de privacidade, ocultamos o nome da sua cidade.',
-      reply_markup: {
-        inline_keyboard: [
-          [
-            { text: 'Canal de figurinhas', url: 'https://t.me/lbrabo' },
-            { text: '👤Dono', url: 'https://t.me/Kylorensbot' }],
-          [{ text: 'Adicione-me em seu grupo', url: 'https://t.me/climatologiabot?startgroup=true' }],
-          [{ text: 'Fazer uma doação 💰', callback_data: '/donate'}]
-        ],
-      },
-      parse_mode: 'Markdown'
+
+  // Check if user exists in the database
+  let user = await UserModel.findOne({ userID: msg.from.id });
+  if (!user) {
+    // If user does not exist, create a new user
+    user = new UserModel({
+      firstName: msg.from.first_name,
+      userID: msg.from.id,
+      username: msg.from.username,
+      lang: 'en' // Default language code
     });
-      }
-  });
-  
+    await user.save();
+  } else {
+    // If user exists, update their lang in the database (in case it has changed)
+    i18n.setLocale(user.lang);
+  }
 
-  bot.on('callback_query', (callbackQuery) => {
-    const msg = callbackQuery.message;
-    const data = callbackQuery.data;
-  
-    if (data === '/donate') {
-      const usuario =  msg.from.first_name;
-    const chavePix = '32dc79d2-2868-4ef0-a277-2c10725341d4';
-    const banco = 'Picpay';
-    const nome = 'Luzia';
-  
-    const resposta = `Olá, ${usuario}! \n\nContribua com qualquer valor para ajudar a manter o servidor do bot online e com mais recursos! Sua ajuda é fundamental para mantermos o bot funcionando de forma eficiente e com novas funcionalidades. \n\nPara fazer uma doação, utilize a chave PIX a seguir: \nPix: \`\`\`${chavePix}\`\`\` \nBanco: ${banco}\nNome: ${nome}\n\nObrigado pela sua contribuição! 🙌"`;
-  
-    bot.sendMessage(msg.chat.id, resposta, {reply_to_message_id: msg.message_id, parse_mode: 'Markdown'});
+  // Send message with two buttons for URL and choosing language
+  bot.sendMessage(chatId, i18n.__('startMessage'), {
+    reply_markup: {
+      inline_keyboard: [
+        [
+          {
+            text: i18n.__('addGroup'),
+            url: 'https://example.com'
+          },
+          {
+            text: i18n.__('owner'),
+            url: 'https://example.com'
+          }
+        ],
+        [
+          {
+            text: i18n.__('langMessage'),
+            callback_data: 'choose_language'
+          }
+        ]
+      ]
     }
-  });
+  });  
+});
 
-
-
-
-
-  // Comando /help
-  bot.onText(/\/help/, (msg) => {
-    const chatId = msg.chat.id;
+bot.on('callback_query', async (callbackQuery) => {
+  if (callbackQuery.message.chat.type !== 'private') {
+    return;
+  }
   
-    // Enviando mensagem com uma foto e um texto explicativo
-    bot.sendPhoto(chatId, 'https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/f914dc21-b453-4629-8710-ebf4ec304e49/d8gymea-76b549b0-5202-4789-899a-9c5f835e8fd8.png?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7InBhdGgiOiJcL2ZcL2Y5MTRkYzIxLWI0NTMtNDYyOS04NzEwLWViZjRlYzMwNGU0OVwvZDhneW1lYS03NmI1NDliMC01MjAyLTQ3ODktODk5YS05YzVmODM1ZThmZDgucG5nIn1dXSwiYXVkIjpbInVybjpzZXJ2aWNlOmZpbGUuZG93bmxvYWQiXX0.tQYStAnWtQo_s7raGbX_T9CVmujGRY_blrcI68suz5E', {
-      caption: 'Olá! Eu sou um bot de previsão do tempo. \n\nVocê pode me usar inline digitando o nome da cidade. Tente digitar `@climatologiabot nome da sua cidade` em qualquer conversa. \n\nVocê também pode clicar nos botões abaixo para obter suporte ou acessar outro bot:',
-      parse_mode: 'Markdown',
+  const chatId = callbackQuery.message.chat.id;
+  const messageId = callbackQuery.message.message_id;
+
+  if (callbackQuery.data === 'choose_language') {
+    // Send message with two buttons to choose language
+    await bot.editMessageText(i18n.__('chooseLangMessage'), {
+      chat_id: chatId,
+      message_id: messageId,
       reply_markup: {
         inline_keyboard: [
           [
-            { text: 'Grupo de Apoio', url: 'https://t.me/namoro_e_amizadesc' },
-            { text: 'Suporte', url: 'https://t.me/kylorensbot' }
+            {
+              text: '🇧🇷 Português',
+              callback_data: 'choose_portuguese'
+            },
+            {
+              text: '🇺🇸 English',
+              callback_data: 'choose_english'
+            }
           ],
           [
-            { text: 'Clique aqui!', callback_data: 'contact' }
+            {
+              text: '⬅️ Voltar',
+              callback_data: 'back_to_start'
+            }
           ]
         ]
       }
     });
+  } else if (callbackQuery.data === 'choose_portuguese') {
+    // Update user language in the database
+    const user = await UserModel.findOneAndUpdate({ userID: callbackQuery.from.id }, { lang: 'pt' }, { new: true });
+    i18n.setLocale(user.lang);
+
+    // Send message to confirm language change
+    await bot.answerCallbackQuery(callbackQuery.id, { text: i18n.__('langChangedMessage') });
+  } else if (callbackQuery.data === 'choose_english') {
+    // Update user language in the database
+    const user = await UserModel.findOneAndUpdate({ userID: callbackQuery.from.id }, { lang: 'en' }, { new: true });
+    i18n.setLocale(user.lang);
+
+    // Send message to confirm language change
+    await bot.answerCallbackQuery(callbackQuery.id, { text: i18n.__('langChangedMessage') });
+  } else if (callbackQuery.data === 'back_to_start') {
+    // Send message with two buttons for URL and choosing language
+    await bot.editMessageText(i18n.__('startMessage'), {
+      chat_id: chatId,
+      message_id: messageId,
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: i18n.__('addGroup'),
+              url: 'https://example.com'
+            },
+            {
+              text: i18n.__('owner'),
+              url: 'https://example.com'
+            }
+          ],
+          [
+            {
+              text: i18n.__('langMessage'),
+              callback_data: 'choose_language'
+            }
+          ]
+        ]
+      }
+    });
+  }
+});
+
+
+
+
+// Handle command to choose language
+bot.onText(/\/lang/, (msg) => {
+  if (msg.chat.type !== "private") {
+    return;
+  }
+  const chatId = msg.chat.id;
+
+  // Send message with language options to choose
+  bot.sendMessage(chatId, i18n.__('chooseLanguage'), {
+    reply_markup: {
+      inline_keyboard: [
+        [
+          {
+            text: '🇺🇸 English',
+            callback_data: 'choose_english'
+          },
+          {
+            text: '🇧🇷 Português',
+            callback_data: 'choose_portuguese'
+          }
+        ]
+      ]
+    }
   });
+});
+
 
 
 
   
+
+
+bot.onText(/\/help/, (msg) => {
+  if (msg.chat.type !== "private") {
+    return;
+  } 
+  const chatId = msg.chat.id;
+
+  // Obtendo a mensagem de ajuda na língua do usuário
+  const helpMessage = i18n.__('help_message');
+
+  bot.sendPhoto(chatId, 'https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/f914dc21-b453-4629-8710-ebf4ec304e49/d8gymea-76b549b0-5202-4789-899a-9c5f835e8fd8.png?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7InBhdGgiOiJcL2ZcL2Y5MTRkYzIxLWI0NTMtNDYyOS04NzEwLWViZjRlYzMwNGU0OVwvZDhneW1lYS03NmI1NDliMC01MjAyLTQ3ODktODk5YS05YzVmODM1ZThmZDgucG5nIn1dXSwiYXVkIjpbInVybjpzZXJ2aWNlOmZpbGUuZG93bmxvYWQiXX0.tQYStAnWtQo_s7raGbX_T9CVmujGRY_blrcI68suz5E', {
+    caption: helpMessage,
+    parse_mode: 'Markdown',
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: i18n.__('support_group_button'), url: 'https://t.me/namoro_e_amizadesc' },
+          { text: i18n.__('support_button'), url: 'https://t.me/kylorensbot' }
+        ]
+      ]
+      
+    }
+  });
+});
+
+
+
+
+
