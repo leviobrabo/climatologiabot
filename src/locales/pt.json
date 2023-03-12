@@ -1,5 +1,5 @@
 {
-    "startMessage": "Olá! Eu sou um bot de previsão do tempo. \n\nVocê pode me usar inline digitando o nome da cidade. Tente digitar `@climatologiabot nome da sua cidade` em qualquer conversa. \n\nVocê também pode clicar nos botões abaixo para obter suporte ou acessar outro bot:",
+    "startMessage": "Olá! sou a Janna!\n\nEu sou um bot de previsão do tempo. \n\nVocê pode me usar inline digitando o nome da cidade. Tente digitar `@climatologiabot nome da sua cidade` em qualquer conversa. \n\nVocê também pode clicar nos botões abaixo para obter suporte ou acessar outro bot:",
     "addGroup": "Adicione-me em seu grupo",
     "owner": "Dono",
     "language_set": "Seu idioma foi definido para Português 🇧🇷🇵🇹\n\nDigite /start novamente",

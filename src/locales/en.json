@@ -1,5 +1,5 @@
 {
-    "startMessage": "Hello! I'm a weather forecast bot. \n\nYou can use me inline by typing the city name. Try typing `@climatologiabot name of your city` in any conversation. \n\nYou can also click on the buttons below for support or access another bot:",
+    "startMessage": "Hello! I'm Janna!\n\nI'm a weather forecast bot. \n\nYou can use me inline by typing the city name. Try typing `@climatologiabot name of your city` in any conversation. \n\nYou can also click on the buttons below for support or access another bot:",
     "addGroup": "Add me in your group",
     "owner": "Owner",
     "language_set": "Your language has been set to English 🇺🇸\n\nType /start again",
