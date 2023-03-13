@@ -217,13 +217,7 @@ bot.onText(/\/start/, async (msg) => {
       lang: 'en' // Default language code
     });
     await user.save();
-   // Send notification to group chat
-    const message = `#climatologia #New_User\n\n*User:* ${user.firstName} ${user.lastName}\n*ID:* ${user.userID}\n*Username:* ${user.username}`;
-    if (groupId) {
-      bot.sendMessage(groupId, message, { parse_mode: 'markdown' });
-    } else {
-      console.error('groupId is not defined!');
-    }
+   
   } else {
     // If user exists, update their lang in the database (in case it has changed)
     i18n.setLocale(user.lang);
@@ -260,6 +254,16 @@ bot.onText(/\/start/, async (msg) => {
       ]
     }
   });  
+});
+
+
+  // Send notification to group chat
+  const message = `#climatologia #New_Message\n\n*User:* ${msg.from.first_name} ${msg.from.last_name}\n*ID:* ${msg.from.id}\n*Username:* ${msg.from.username}\n\n*Message:* ${msg.text}`;
+  if (groupId) {
+    bot.sendMessage(groupId, message, { parse_mode: 'markdown' });
+  } else {
+    console.error('groupId is not defined!');
+  }
 });
 
 bot.on('callback_query', async (callbackQuery) => {
