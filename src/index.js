@@ -195,16 +195,6 @@ bot.onText(/\/stats/, async (msg, match) => {
 });
 
 
-UserModel.watch().on('insert', async data => {
-  const user = data.fullDocument;
-  const message = `#climatologia #New_User\n\n*User:* ${user.firstName} ${user.lastName}\n*ID:* ${user.userID}\n*Username:* ${user.username}`;
-  if (process.env.groupId) {
-    bot.sendMessage(process.env.groupId, message, { parse_mode: 'Markdown' });
-  } else {
-    console.error('groupId não está definido!');
-  }
-});
-
 
 bot.onText(/\/start/, async (msg) => {
   if (msg.chat.type !== "private") {
@@ -213,6 +203,8 @@ bot.onText(/\/start/, async (msg) => {
   
   
   const chatId = msg.chat.id;
+  const groupId = process.env.groupId;
+
   
   // Check if user exists in the database
   let user = await UserModel.findOne({ userID: msg.from.id });
@@ -225,13 +217,18 @@ bot.onText(/\/start/, async (msg) => {
       lang: 'en' // Default language code
     });
     await user.save();
-   
+   // Send notification to group chat
+    const message = `#climatologia #New_User\n\n*User:* ${user.firstName} ${user.lastName}\n*ID:* ${user.userID}\n*Username:* ${user.username}`;
+    if (groupId) {
+      bot.sendMessage(groupId, message, { parse_mode: 'markdown' });
+    } else {
+      console.error('groupId is not defined!');
+    }
   } else {
     // If user exists, update their lang in the database (in case it has changed)
     i18n.setLocale(user.lang);
   }
-
-
+  
   // Send message with two buttons for URL and choosing language
   bot.sendMessage(chatId, i18n.__('startMessage'), {
     parse_mode: 'markdown',
