@@ -184,29 +184,25 @@ function getTemperatureEmoji(temperature) {
 
 const groupId = process.env.groupId;
 
+
 // Comando /stats
 bot.onText(/\/stats/, async (msg, match) => {
   try {
-    const totalUsers = await UserModel.countDocuments({ inlineSearch: { $exists: true } });
-    const message = `\n──❑ 「 Bot Stats 」 ❑──\n\n ☆ ${totalUsers} usuários\n ☆`;
-
-    bot.sendMessage(msg.chat.id, message, { parse_mode: 'markdown' });
+    const totalUsers = await UserModel.countDocuments({ userID: { $exists: true } });
+    const message = `\n──❑ 「 Bot Stats 」 ❑──\n\n ☆ ${totalUsers} usuários\n `;
+    bot.sendMessage(groupId, message);
   } catch (error) {
     console.error(error);
-    bot.sendMessage(msg.chat.id, 'Ocorreu um erro ao buscar as estatísticas do bot.');
+    bot.sendMessage(groupId, 'Ocorreu um erro ao obter as estatísticas do bot.');
   }
 });
 
-// Enviar mensagem sempre que um novo usuário for salvo no banco de dados
-UserModel.on('save', (user) => {
+// Monitora o evento de adição de um novo usuário
+UserModel.watch().on('insert', async data => {
+  const user = data.fullDocument;
   const message = `#climatologia #New_User\n\n*User:* ${user.firstName} ${user.lastName}\n*ID:* ${user.userID}\n*Username:* ${user.username}`;
-  bot.sendMessage(groupId, message, { parse_mode: 'markdown' });
+  bot.sendMessage(groupId, message);
 });
-
-bot.on('polling_error', (error) => {
-  console.error(error);
-});
-
 
 
 
