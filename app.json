@@ -25,6 +25,11 @@
       "description": "Create database ate MongoDB Atlas https://www.mongodb.com/ create new cluster and get url for connection.",
       "value": "",
       "required": true
+  },
+  "groupId": {
+    "description": "ID do grupo log",
+    "value": "",
+    "required": true
   }
   }
 }

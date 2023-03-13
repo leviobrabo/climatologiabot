@@ -184,24 +184,30 @@ function getTemperatureEmoji(temperature) {
 
 
 
+  const groupId = process.env.groupId;
 
 // Comando /stats
 bot.onText(/\/stats/, async (msg, match) => {
   try {
-    const totalUsers = await UserModel.countDocuments();
-    const inlineUsers = await UserModel.countDocuments({ inlineSearch: { $exists: true } });
-    const message = `\n──❑ 「 Bot Stats 」 ❑──\n\n ☆ ${totalUsers} usuários\n ☆ ${inlineUsers} usuários com pesquisa inline realizada`
+    const totalUsers = await UserModel.countDocuments({ inlineSearch: { $exists: true } });
+    const message = `\n──❑ 「 Bot Stats 」 ❑──\n\n ☆ ${totalUsers} usuários\n ☆`;
+
     bot.sendMessage(msg.chat.id, message);
   } catch (error) {
-    console.error(error)
-    bot.sendMessage(msg.chat.id, 'Ocorreu um erro ao buscar as estatísticas do bot.')
+    console.error(error);
+    bot.sendMessage(msg.chat.id, 'Ocorreu um erro ao buscar as estatísticas do bot.');
   }
 });
 
+// Enviar mensagem sempre que um novo usuário for salvo no banco de dados
+UserModel.on('save', (user) => {
+  const message = `Novo usuário adicionado: ${user.username} (${user.firstName} ${user.lastName})`;
+  bot.sendMessage(groupID, message);
+});
 
 bot.on('polling_error', (error) => {
-  console.error(error)
-})
+  console.error(error);
+});
 
 
 
