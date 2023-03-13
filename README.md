@@ -36,8 +36,8 @@ $ npm i
 
 # Crie um arquivo com .env com qualquer editor de texto e coloque:
 WEATHER_API_KEY=API DO WEATHER (https://openweathermap.org/api)
-TELEGRAM_API=Token DO seu bot gerado no (https://t.me/BotFather)
-groupId= ID do grupo de log
+TELEGRAM_API=Token do seu bot gerado no @BotFather
+
 # Execute a aplicação
 $ npm start
 
