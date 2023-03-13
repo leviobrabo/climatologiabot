@@ -1,18 +1,17 @@
 {
-  "startMessage": "Olá, sou Janna! \n\nSou um bot que te envia os dados de previsão do tempo da sua cidade.😄! \n\n*Sou um bot INLINE, ou seja, não precisa me pôr no seu grupo.* Basta escrever meu username dessa forma @climatologiabot e logo em seguida o nome da sua cidade. Fique tranquilo, as informações são ocultadas para os demais. 🤝 \n\nVocê também pode pesquisar a previsão do tempo diretamente no meu privado😉\n\nPor questões de privacidade, ocultamos o nome da sua cidade.",
-  "addGroup": "Adicione-me em seu grupo",
-  "owner": "Dono",
-  "language_set": "Seu idioma foi definido para Português 🇧🇷🇵🇹\n\nDigite /start novamente",
-  "help_message": "Olá! Eu sou um bot de previsão do tempo. \n\nVocê pode me usar inline digitando o nome da cidade. Tente digitar @climatologiabot nome da sua cidade em qualquer conversa. \n\nVocê também pode clicar nos botões abaixo para obter suporte ou acessar outro bot: \n\nDoe= 32dc79d2-2868-4ef0-a277-2c10725341d4",
-  "support_group_button": "Grupo de Suporte",
-  "support_button": "Contato de Suporte",
-  "langMessage": "Escolha um idioma",
-  "chooseLanguage": "Escolha um idioma",
-  "langChangedMessage": "Seu idioma foi definido para Português 🇧🇷🇵🇹",
-  "chooseLangMessage": "Escolha um idioma",
+  "startMessage": "Olá, sou *Janna*! \n\n_Sou um bot que te envia os dados de previsão do tempo da sua cidade._ 😄!\n\n*Climatolgiabot - Canal Oficial📬:* [Clique aqui](https://t.me/climatologiaofc)",
+  "addGroup": "✨ Adicione-me em seu grupo",
+  "owner": "👨‍💻 Suporte",
+  "help_message": "Olá! Eu sou um *bot de previsão do tempo.* \n\nVocê pode me usar inline, isto signfica que não precisa me adicionar em grupos, basta digitar o meu username e o nome da cidade. Faça o teste e envie a previsão do tempo na sua cidade... \n\nPor exemplo: `@climatologiabot Santos`\nUse o bot para compartilha o clima da sua cidade. \n\n*Doe=* `32dc79d2-2868-4ef0-a277-2c10725341d4`",
+  "support_group_button": "📢 Canal Oficial",
+  "support_button": "👨‍💻 Suporte",
+  "langMessage": "🇧🇷 Idioma",
+  "chooseLanguage": "Selecione o idioma que você quer utilizar no bot",
+  "langChangedMessage": "Seu idioma foi definido para Português 🇧🇷",
+  "chooseLangMessage": "Selecione o idioma que você quer utilizar no bot:",
   "how_to_use": "Como usar o bot",
-  "weather_forecast_message": "*Previsão do tempo para sua cidade {{emoji}} * \n\n*🌡️ Temperatura:* {{temperature}}°C\n*🌤️ Descrição:* {{weatherDescription}} \n🏖 *Sensação térmica:* {{feelsLike}}°C\n💨 *Velocidade do vento:* {{windSpeed}} km/h \n💦 *Umidade relativa do ar:* {{humidity}}% \n*🌎 País:* {{countryCode}} \n\n*🔍 Consultado às:* {{horarioFormatado}} ",
-  "city_weather_forecast_message": "*Previsão do tempo para {{cityName}} {{emoji}} * \n\n*🏙️ Cidade:* {{cityName}} \n*🌡️ Temperatura:* {{temperature}}°C\n*🌤️ Descrição:* {{weatherDescription}} \n🏖 *Sensação térmica:* {{feelsLike}}°C\n💨 *Velocidade do vento:* {{windSpeed}} km/h \n💦 *Umidade relativa do ar:* {{humidity}}% \n*🌎 País:* {{countryCode}} \n\n*🔍 Consultado às:* {{horarioFormatado}} ",
+  "weather_forecast_message": "*Previsão do tempo para sua cidade {{emoji}} * \n\n*🌡️ Temperatura:* {{temperature}}°C\n*🌤️ Descrição:* {{weatherDescription}} \n🏖 *Sensação térmica:* {{feelsLike}}°C\n💨 *Velocidade do vento:* {{windSpeed}} km/h \n💦 *Umidade relativa do ar:* {{humidity}}% \n*🌎 País:* {{countryCode}} \n\n*🔍 Consultado às:* _{{horarioFormatado}}_ ",
+  "city_weather_forecast_message": "*Previsão do tempo para {{cityName}} {{emoji}} * \n\n*🏙️ Cidade:* {{cityName}} \n*🌡️ Temperatura:* {{temperature}}°C\n*🌤️ Descrição:* {{weatherDescription}} \n🏖 *Sensação térmica:* {{feelsLike}}°C\n💨 *Velocidade do vento:* {{windSpeed}} km/h \n💦 *Umidade relativa do ar:* {{humidity}}% \n*🌎 País:* {{countryCode}} \n\n*🔍 Consultado às:* _{{horarioFormatado}}_ ",
   "title_message_hidden": "Previsão do tempo para sua cidade🌤️",
   "description_hidden": "Veja o clima de {{cityName}} - {{countryCode}} \nObs.: NOME DA CIDADE OCULTADA",
   "title_message_visible": "Previsão do tempo para sua cidade🌤️",
@@ -20,6 +19,12 @@
   "erro_message": "Não foi possível obter a previsão do tempo. Por favor, tente novamente mais tarde.",
   "title_error": "Ops! Ocorreu um erro",
   "description_error": "Não foi possível obter a previsão do tempo.",
-  "startlanguptdate": "Início"
-  
+  "startlanguptdate": "Início",
+  "back": "⬅️ Volta",
+  "help": "❓ Ajuda"
 }
+
+
+
+
+
