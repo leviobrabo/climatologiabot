@@ -35,7 +35,7 @@ $ npm i
 # Variáveis ambientes
 
 # Crie um arquivo com .env com qualquer editor de texto e coloque:
-WEATHER_API_KEY=#API DO WEATHER (https://openweathermap.org/api)
+WEATHER_API_KEY=API DO WEATHER (https://openweathermap.org/api)
 TELEGRAM_API=Token do seu bot gerado no @BotFather
 DB_STRING=MONGO URL 
 
