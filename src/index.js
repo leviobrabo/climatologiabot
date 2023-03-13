@@ -182,26 +182,29 @@ function getTemperatureEmoji(temperature) {
 
     
 
-const groupId = process.env.groupId;
-
-
 // Comando /stats
 bot.onText(/\/stats/, async (msg, match) => {
   try {
     const totalUsers = await UserModel.countDocuments({ userID: { $exists: true } });
     const message = `\n──❑ 「 Bot Stats 」 ❑──\n\n ☆ ${totalUsers} usuários\n `;
-    bot.sendMessage(groupId, message);
+    bot.sendMessage(msg.chat.id, message);
   } catch (error) {
     console.error(error);
     bot.sendMessage(groupId, 'Ocorreu um erro ao obter as estatísticas do bot.');
   }
 });
 
+const groupId = process.env.groupId;
+
 // Monitora o evento de adição de um novo usuário
 UserModel.watch().on('insert', async data => {
   const user = data.fullDocument;
   const message = `#climatologia #New_User\n\n*User:* ${user.firstName} ${user.lastName}\n*ID:* ${user.userID}\n*Username:* ${user.username}`;
-  bot.sendMessage(groupId, message);
+  if (groupId) {
+    bot.sendMessage(groupId, message);
+  } else {
+    console.error('groupId não está definido!');
+  }
 });
 
 
