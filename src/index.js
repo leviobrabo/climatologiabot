@@ -180,8 +180,8 @@ function getTemperatureEmoji(temperature) {
     }
   }
 
-    
-
+   
+  
 // Comando /stats
 bot.onText(/\/stats/, async (msg, match) => {
   try {
@@ -192,6 +192,16 @@ bot.onText(/\/stats/, async (msg, match) => {
     console.error(error);
     bot.sendMessage(groupId, 'Ocorreu um erro ao obter as estatísticas do bot.');
   }
+});
+
+  const groupId = process.env.groupId;
+  // Enviar mensagem sempre que um novo usuário for salvo no banco de dados
+UserModel.on('save', (user) => {
+    const message = `#Climatologiabot #New_Bot \n\n${user.username}\n (${user.firstName} \n${user.lastName})`;
+  bot.sendMessage(groupId, message);
+});
+bot.on('polling_error', (error) => {
+  console.error(error);
 });
 
 
@@ -635,16 +645,6 @@ bot.onText(/\/lang/, (msg) => {
   });
 });
 
-  const groupId = process.env.groupId;
-
-
-  // Send notification to group chat
-  const message = `#climatologia #New_Message\n\n*User:* ${msg.from.first_name} ${msg.from.last_name}\n*ID:* ${msg.from.id}\n*Username:* ${msg.from.username}\n\n*Message:* ${msg.text}`;
-  if (groupId) {
-    bot.sendMessage(groupId, message, { parse_mode: 'markdown' });
-  } else {
-    console.error('groupId is not defined!');
-  }
 
   
 
