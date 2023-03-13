@@ -230,7 +230,7 @@ bot.onText(/\/start/, async (msg) => {
     // If user exists, update their lang in the database (in case it has changed)
     i18n.setLocale(user.lang);
   }
-});
+
 
   // Send message with two buttons for URL and choosing language
   bot.sendMessage(chatId, i18n.__('startMessage'), {
