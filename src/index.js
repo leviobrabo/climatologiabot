@@ -200,15 +200,20 @@ bot.onText(/\/stats/, async (msg, match) => {
 });
 
 // Enviar mensagem sempre que um novo usuário for salvo no banco de dados
+
 UserModel.on('save', (user) => {
-  const message = `#Climatologiabot #New_Bot \n\n${user.username}\n (${user.firstName} \n${user.lastName})`;
+
+  const message = `#climatologia #New_User\n\n*User:* ${user.firstName} ${user.lastName}\n*ID:* ${user._id}\n*Username:* ${user.username}`;
+
   bot.sendMessage(groupId, message);
+
 });
 
 bot.on('polling_error', (error) => {
-  console.error(error);
-});
 
+  console.error(error);
+
+});
 
 
 
