@@ -87,12 +87,14 @@ bot.on('inline_query', async (query) => {
       const humidity = weatherData.main.humidity;
       const emoji = getTemperatureEmoji(temperature);
       const countryCode = weatherData.sys.country || "";
-      const agora = new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
-      const horas = new Date(agora).getHours();
-      const minutos = new Date(agora).getMinutes();
-      const segundos = new Date(agora).getSeconds();
+      const data = new Date(agora);
 
-      let horarioFormatado = `${horas < 10 ? '0' : ''}${horas % 12}:${minutos < 10 ? '0' : ''}${minutos}:${segundos < 10 ? '0' : ''}${segundos} ${horas < 12 ? 'AM' : 'PM'}`;
+      const horas = data.getHours() > 12 ? data.getHours() - 12 : data.getHours();
+      const minutos = data.getMinutes() < 10 ? '0' + data.getMinutes() : data.getMinutes();
+      const periodo = data.getHours() < 12 ? 'AM' : 'PM';
+
+      let horarioFormatado = `${horas}:${minutos} ${periodo}`;
+
 
                 
           
