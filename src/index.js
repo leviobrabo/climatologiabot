@@ -94,32 +94,7 @@ bot.on('inline_query', async (query) => {
 
       let horarioFormatado = `${horas < 10 ? '0' : ''}${horas % 12}:${minutos < 10 ? '0' : ''}${minutos}:${segundos < 10 ? '0' : ''}${segundos} ${horas < 12 ? 'AM' : 'PM'}`;
 
-       // Verifica se o usuário já existe no banco de dados
-            const user = await UserModel.findOne({ userID: query.from.id });
-
-            // Se o usuário não estiver cadastrado, cria um novo registro no banco de dados
-            if (!user) {
-              const newUser = new UserModel({
-                firstName: query.from.first_name,
-                userID: query.from.id,
-                username: query.from.username,
-                inlineSearch: cityName // adiciona a pesquisa do usuário ao novo registro
-              });
-              await newUser.save();
-            } else {
-              // Atualiza o campo inlineSearch com a nova pesquisa realizada pelo usuário
-              user.inlineSearch = cityName;
-              await user.save();
-            }
-
-            // Envia a mensagem para o grupo especificado
-            const message3 = `#Climatologiabot #New_User: 
-            Nome: ${query.from.first_name} 
-            ID: ${query.from.id} 
-            Username: ${query.from.username} 
-            Inline Search: ${cityName}`;
-            api.sendMessage({ chat_id: GROUP_CHAT_ID, text: message3 });
-                              
+                
           
       
       // URL da imagem do ícone do tempo
