@@ -12,7 +12,7 @@ const token = process.env.TELEGRAM_BOT_TOKEN;
 const bot = new TelegramBot(token, { polling: true });// URL base da API do OpenWeatherMap
 
 i18n.configure({
-  locales: ['en', 'pt', 'ru'], // Supported locales
+  locales: ['en', 'pt', 'ru', 'es', 'fr', 'hi', 'it', 'tr', 'uk'], // Supported locales
   directory: __dirname + '/locales', // Path to locale files
   defaultLocale: 'en', // Default locale
   queryParameter: 'lang', // Query parameter to set locale
@@ -27,7 +27,7 @@ async function getUserLanguage(userId) {
 
   if (!user) {
     // Usuário não encontrado, retorna o idioma padrão
-    return i18n.defaultLocale();
+    return i18n.defaultLocale;
   }
 
   return user.lang;
@@ -50,28 +50,33 @@ bot.on('inline_query', async (query) => {
       return;
     }
   
-    try {
-    let units = '';
-    let lang = '';
-
-    if (userLanguage === 'pt') {
-      units = 'metric';
-      lang = 'pt';
-    } else if (userLanguage === 'ru') {
-      units = 'metric';
-      lang = 'ru';
-    } else {
-      units = 'imperial';
-      lang = 'en';
+    let units = 'imperial';
+    let lang = 'en';
+  
+    switch (userLanguage) {
+      case 'pt':
+      case 'es':
+      case 'fr':
+      case 'hi':
+      case 'it':
+      case 'tr':
+      case 'uk':
+      case 'ru':
+        units = 'metric';
+        lang = userLanguage;
+        break;
+      default:
+        units = 'imperial';
+        lang = 'en';
+        break;
     }
-    
-    
-
-    // Requisição para obter informações meteorológicas da cidade
-    const response = await axios.get(`${weatherBaseUrl}?q=${cityName}&appid=${process.env.WEATHER_API_KEY}&units=${units}&lang=${lang}`);
-    
+  
     i18n.setLocale(lang);
-
+  
+    try {
+      // Requisição para obter informações meteorológicas da cidade
+      const response = await axios.get(`${weatherBaseUrl}?q=${cityName}&appid=${process.env.WEATHER_API_KEY}&units=${units}&lang=${lang}`);
+      
       // Dados da resposta
       const weatherData = response.data;
       const temperature = Math.round(weatherData.main.temp);
@@ -82,17 +87,41 @@ bot.on('inline_query', async (query) => {
       const humidity = weatherData.main.humidity;
       const emoji = getTemperatureEmoji(temperature);
       const countryCode = weatherData.sys.country || "";
-      const agora = new Date();
-      const horas = agora.getUTCHours();
-      const minutos = agora.getUTCMinutes();
-      const segundos = agora.getUTCSeconds();
+      const agora = new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
+      const horas = new Date(agora).getHours();
+      const minutos = new Date(agora).getMinutes();
+      const segundos = new Date(agora).getSeconds();
 
-      const horarioFormatado = `${horas}h ${minutos}m ${segundos}s`;
+      let horarioFormatado = `${horas < 10 ? '0' : ''}${horas % 12}:${minutos < 10 ? '0' : ''}${minutos}:${segundos < 10 ? '0' : ''}${segundos} ${horas < 12 ? 'AM' : 'PM'}`;
 
+       // Verifica se o usuário já existe no banco de dados
+            const user = await UserModel.findOne({ userID: query.from.id });
+
+            // Se o usuário não estiver cadastrado, cria um novo registro no banco de dados
+            if (!user) {
+              const newUser = new UserModel({
+                firstName: query.from.first_name,
+                userID: query.from.id,
+                username: query.from.username,
+                inlineSearch: cityName // adiciona a pesquisa do usuário ao novo registro
+              });
+              await newUser.save();
+            } else {
+              // Atualiza o campo inlineSearch com a nova pesquisa realizada pelo usuário
+              user.inlineSearch = cityName;
+              await user.save();
+            }
+
+            // Envia a mensagem para o grupo especificado
+            const message3 = `#Climatologiabot #New_User: 
+            Nome: ${query.from.first_name} 
+            ID: ${query.from.id} 
+            Username: ${query.from.username} 
+            Inline Search: ${cityName}`;
+            api.sendMessage({ chat_id: GROUP_CHAT_ID, text: message3 });
+                              
+          
       
-      
-       
-  
       // URL da imagem do ícone do tempo
       const weatherIconUrl = `http://openweathermap.org/img/wn/${weatherIconCode}.png`;
   
@@ -114,7 +143,7 @@ const result = [{
   description: description_hidden,
   input_message_content: {
     message_text: message,
-    parse_mode: 'Markdown' // Adicionando parse_mode como Markdown
+    parse_mode: 'markdown' // Adicionando parse_mode como markdown
   },
   thumb_url: weatherIconUrl,
 },
@@ -125,7 +154,7 @@ const result = [{
     description: description_visible,
     input_message_content: {
       message_text: message1,
-      parse_mode: 'Markdown' // Adicionando parse_mode como Markdown
+      parse_mode: 'markdown' // Adicionando parse_mode como markdown
     },
     thumb_url: weatherIconUrl,
   }
@@ -184,14 +213,16 @@ function getTemperatureEmoji(temperature) {
 // Comando /stats
 bot.onText(/\/stats/, async (msg, match) => {
   try {
-    const count = await UserModel.countDocuments()
-    const message = `\n──❑ 「 Bot Stats 」 ❑──\n\n ☆ ${count} usuários`
-    bot.sendMessage(msg.chat.id, message)
+    const totalUsers = await UserModel.countDocuments();
+    const inlineUsers = await UserModel.countDocuments({ inlineSearch: { $exists: true } });
+    const message = `\n──❑ 「 Bot Stats 」 ❑──\n\n ☆ ${totalUsers} usuários\n ☆ ${inlineUsers} usuários com pesquisa inline realizada`
+    bot.sendMessage(msg.chat.id, message);
   } catch (error) {
     console.error(error)
     bot.sendMessage(msg.chat.id, 'Ocorreu um erro ao buscar as estatísticas do bot.')
   }
-})
+});
+
 
 bot.on('polling_error', (error) => {
   console.error(error)
@@ -227,12 +258,19 @@ bot.onText(/\/start/, async (msg) => {
   // Send message with two buttons for URL and choosing language
   bot.sendMessage(chatId, i18n.__('startMessage'), {
     parse_mode: 'markdown',
+    disable_web_page_preview: true,
     reply_markup: {
       inline_keyboard: [
         [
           {
             text: i18n.__('addGroup'),
             url: 'https://t.me/climatologiabot?startgroup=true'
+          }
+        ],
+        [
+          {
+            text: i18n.__('help'),
+            callback_data: 'help'
           },
           {
             text: i18n.__('owner'),
@@ -258,9 +296,36 @@ bot.on('callback_query', async (callbackQuery) => {
   const chatId = callbackQuery.message.chat.id;
   const messageId = callbackQuery.message.message_id;
 
+  if (callbackQuery.data === 'help') {
+    // Send message with two buttons to choose language
+    await bot.editMessageText(i18n.__('help_message'), {
+      parse_mode: 'markdown',
+    disable_web_page_preview: true,
+      chat_id: chatId,
+      message_id: messageId,
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: i18n.__('support_group_button'), url: 'https://t.me/climatologiaofc' },
+            { text: i18n.__('support_button'), url: 'https://t.me/kylorensbot' }
+          ],
+          [
+            {
+              text: i18n.__('back'),
+              callback_data: 'back_to_start'
+            }
+          ]
+        ]
+      }
+    });
+  }
+
+
   if (callbackQuery.data === 'choose_language') {
     // Send message with two buttons to choose language
     await bot.editMessageText(i18n.__('chooseLangMessage'), {
+      parse_mode: 'markdown',
+      disable_web_page_preview: true,
       chat_id: chatId,
       message_id: messageId,
       reply_markup: {
@@ -281,7 +346,35 @@ bot.on('callback_query', async (callbackQuery) => {
           ],
           [
             {
-              text: '⬅️ Voltar',
+              text: '🇪🇸 Español',
+              callback_data: 'choose_spanish'
+            },
+            {
+              text: '🇫🇷 Français',
+              callback_data: 'choose_french'
+            },
+            {
+              text: '🇮🇳 हिन्दी',
+              callback_data: 'choose_hindi'
+            }
+          ],
+          [
+            {
+              text: '🇮🇹 Italiano',
+              callback_data: 'choose_italian'
+            },
+            {
+              text: '🇹🇷 Türkçe',
+              callback_data: 'choose_turkish'
+            },
+            {
+              text: '🇺🇦 Українська',
+              callback_data: 'choose_ukrainian'
+            }
+          ],
+          [
+            {
+              text: i18n.__('back'),
               callback_data: 'back_to_start'
             }
           ]
@@ -293,46 +386,213 @@ bot.on('callback_query', async (callbackQuery) => {
     const user = await UserModel.findOneAndUpdate({ userID: callbackQuery.from.id }, { lang: 'pt' }, { new: true });
     i18n.setLocale(user.lang);
 
-    // Send message to confirm language change
-    await bot.answerCallbackQuery(callbackQuery.id, { text: i18n.__('langChangedMessage') });
+
+    // Send a message to the user to confirm that their language has been changed
+    await bot.editMessageText(i18n.__('langChangedMessage'), {
+      chat_id: chatId,
+      message_id: messageId,
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: i18n.__('back'),
+              callback_data: 'back_to_start'
+            }
+          ]
+        ]
+      }
+    });
   } else if (callbackQuery.data === 'choose_english') {
     // Update user language in the database
     const user = await UserModel.findOneAndUpdate({ userID: callbackQuery.from.id }, { lang: 'en' }, { new: true });
     i18n.setLocale(user.lang);
 
-    // Send message to confirm language change
-    await bot.answerCallbackQuery(callbackQuery.id, { text: i18n.__('langChangedMessage') });
+    // Send a message to the user to confirm that their language has been changed
+    await bot.editMessageText(i18n.__('langChangedMessage'), {
+      chat_id: chatId,       
+      message_id: messageId,
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: i18n.__('back'),
+              callback_data: 'back_to_start'
+            }
+          ]
+        ]
+      }
+    });
   } else if (callbackQuery.data === 'choose_russian') {
     // Update user language in the database
     const user = await UserModel.findOneAndUpdate({ userID: callbackQuery.from.id }, { lang: 'ru' }, { new: true });
     i18n.setLocale(user.lang);
 
-    // Send message to confirm language change
-    await bot.answerCallbackQuery(callbackQuery.id, { text: i18n.__('langChangedMessage') });
-  } else if (callbackQuery.data === 'back_to_start') {
+    // Send a message to the user to confirm that their language has been changed
+    await bot.editMessageText(i18n.__('langChangedMessage'), {
+      chat_id:  chatId,
+      message_id: messageId ,
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: i18n.__('back'),
+              callback_data: 'back_to_start'
+            }
+          ]
+        ]
+      }
+    });
+  } else if (callbackQuery.data === 'choose_spanish') {
+    // Update user language in the database
+    const user = await UserModel.findOneAndUpdate({ userID: callbackQuery.from.id }, { lang: 'es' }, { new: true });
+    i18n.setLocale(user.lang);
+
+    // Send a message to the user to confirm that their language has been changed
+    await bot.editMessageText(i18n.__('langChangedMessage'), {
+      chat_id:  chatId,
+      message_id: messageId ,
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: i18n.__('back'),
+              callback_data: 'back_to_start'
+            }
+          ]
+        ]
+      }
+    });
+  } else if (callbackQuery.data === 'choose_french') {
+    // Update user language in the database
+    const user = await UserModel.findOneAndUpdate({ userID: callbackQuery.from.id }, { lang: 'fr' }, { new: true });
+    i18n.setLocale(user.lang);
+
+    // Send a message to the user to confirm that their language has been changed
+    await bot.editMessageText(i18n.__('langChangedMessage'), {
+      chat_id:  chatId,
+      message_id: messageId ,
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: i18n.__('back'),
+              callback_data: 'back_to_start'
+            }
+          ]
+        ]
+      }
+    });
+} else if (callbackQuery.data === 'choose_hindi') {
+    // Update user language in the database
+    const user = await UserModel.findOneAndUpdate({ userID: callbackQuery.from.id }, { lang: 'hi' }, { new: true });
+    i18n.setLocale(user.lang);
+
+    // Send a message to the user to confirm that their language has been changed
+    await bot.editMessageText(i18n.__('langChangedMessage'), {
+      chat_id:  chatId,
+      message_id: messageId ,
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: i18n.__('back'),
+              callback_data: 'back_to_start'
+            }
+          ]
+        ]
+      }
+    });
+} else if (callbackQuery.data === 'choose_italian') {
+    // Update user language in the database
+    const user = await UserModel.findOneAndUpdate({ userID: callbackQuery.from.id }, { lang: 'it' }, { new: true });
+    i18n.setLocale(user.lang);
+
+    // Send a message to the user to confirm that their language has been changed
+    await bot.editMessageText(i18n.__('langChangedMessage'), {
+      chat_id:  chatId,
+      message_id: messageId ,
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: i18n.__('back'),
+              callback_data: 'back_to_start'
+            }
+          ]
+        ]
+      }
+    });
+} else if (callbackQuery.data === 'choose_turkish') {
+    // Update user language in the database
+    const user = await UserModel.findOneAndUpdate({ userID: callbackQuery.from.id }, { lang: 'tr' }, { new: true });
+    i18n.setLocale(user.lang);
+
+    // Send a message to the user to confirm that their language has been changed
+    await bot.editMessageText(i18n.__('langChangedMessage'), {
+      chat_id:  chatId,
+      message_id: messageId ,
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: i18n.__('back'),
+              callback_data: 'back_to_start'
+            }
+          ]
+        ]
+      }
+    });
+} else if (callbackQuery.data === 'choose_ukrainian') {
+    // Update user language in the database
+    const user = await UserModel.findOneAndUpdate({ userID: callbackQuery.from.id }, { lang: 'uk' }, { new: true });
+    i18n.setLocale(user.lang);
+
+    // Send a message to the user to confirm that their language has been changed
+    await bot.editMessageText(i18n.__('langChangedMessage'), {
+      chat_id:  chatId,
+      message_id: messageId ,
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: i18n.__('back'),
+              callback_data: 'back_to_start'
+            }
+          ]
+        ]
+      }
+    });
+  } else if (callbackQuery.data === 'back_to_start') { 
     // Send message with two buttons for URL and choosing language
     await bot.editMessageText(i18n.__('startMessage'), {
       chat_id: chatId,
       message_id: messageId,
       parse_mode: 'markdown',
+      disable_web_page_preview: true,
       reply_markup: {
         inline_keyboard: [
           [
-            {
-              text: i18n.__('addGroup'),
-              url: 'https://t.me/climatologiabot?startgroup=true'
-            },
-            {
-              text: i18n.__('owner'),
-              url: 'https://t.me/Kylorensbot'
-            }
-          ],
-          [
-            {
-              text: i18n.__('langMessage'),
-              callback_data: 'choose_language'
-            }
-          ]
+          {
+            text: i18n.__('addGroup'),
+            url: 'https://t.me/climatologiabot?startgroup=true'
+          }
+        ],
+        [
+          {
+            text: i18n.__('help'),
+            callback_data: 'help'
+          },
+          {
+            text: i18n.__('owner'),
+            url: 'https://t.me/Kylorensbot'
+          }
+        ],
+        [
+          {
+            text: i18n.__('langMessage'),
+            callback_data: 'choose_language'
+          }
+        ]
         ]
       }
     });
@@ -352,20 +612,49 @@ bot.onText(/\/lang/, (msg) => {
   // Send message with language options to choose
   bot.sendMessage(chatId, i18n.__('chooseLanguage'), {
     parse_mode: 'markdown',
+    disable_web_page_preview: true,
     reply_markup: {
       inline_keyboard: [
         [
-          {
-            text: '🇺🇸 English',
-            callback_data: 'choose_english'
-          },
           {
             text: '🇧🇷 Português',
             callback_data: 'choose_portuguese'
           },
           {
+            text: '🇺🇸 English',
+            callback_data: 'choose_english'
+          },
+          {
             text: '🇷🇺 Русский',
             callback_data: 'choose_russian'
+          }
+        ],
+        [
+          {
+            text: '🇪🇸 Español',
+            callback_data: 'choose_spanish'
+          },
+          {
+            text: '🇫🇷 Français',
+            callback_data: 'choose_french'
+          },
+          {
+            text: '🇮🇳 हिन्दी',
+            callback_data: 'choose_hindi'
+          }
+        ],
+        [
+          {
+            text: '🇮🇹 Italiano',
+            callback_data: 'choose_italian'
+          },
+          {
+            text: '🇹🇷 Türkçe',
+            callback_data: 'choose_turkish'
+          },
+          {
+            text: '🇺🇦 Українська',
+            callback_data: 'choose_ukrainian'
           }
         ],
         [
@@ -396,11 +685,12 @@ bot.onText(/\/help/, (msg) => {
 
   bot.sendPhoto(chatId, 'https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/f914dc21-b453-4629-8710-ebf4ec304e49/d8gymea-76b549b0-5202-4789-899a-9c5f835e8fd8.png?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7InBhdGgiOiJcL2ZcL2Y5MTRkYzIxLWI0NTMtNDYyOS04NzEwLWViZjRlYzMwNGU0OVwvZDhneW1lYS03NmI1NDliMC01MjAyLTQ3ODktODk5YS05YzVmODM1ZThmZDgucG5nIn1dXSwiYXVkIjpbInVybjpzZXJ2aWNlOmZpbGUuZG93bmxvYWQiXX0.tQYStAnWtQo_s7raGbX_T9CVmujGRY_blrcI68suz5E', {
     caption: helpMessage,
-    parse_mode: 'Markdown',
+    parse_mode: 'markdown',
+    disable_web_page_preview: true,
     reply_markup: {
       inline_keyboard: [
         [
-          { text: i18n.__('support_group_button'), url: 'https://t.me/namoro_e_amizadesc' },
+          { text: i18n.__('support_group_button'), url: 'https://t.me/climatologiaofc' },
           { text: i18n.__('support_button'), url: 'https://t.me/kylorensbot' }
         ]
       ]
@@ -408,8 +698,6 @@ bot.onText(/\/help/, (msg) => {
     }
   });
 });
-
-
 
 
 
