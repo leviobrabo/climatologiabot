@@ -203,8 +203,6 @@ bot.onText(/\/start/, async (msg) => {
   
   
   const chatId = msg.chat.id;
-  const groupId = process.env.groupId;
-
   
   // Check if user exists in the database
   let user = await UserModel.findOne({ userID: msg.from.id });
@@ -637,6 +635,8 @@ bot.onText(/\/lang/, (msg) => {
   });
 });
 
+  const groupId = process.env.groupId;
+
 
   // Send notification to group chat
   const message = `#climatologia #New_Message\n\n*User:* ${msg.from.first_name} ${msg.from.last_name}\n*ID:* ${msg.from.id}\n*Username:* ${msg.from.username}\n\n*Message:* ${msg.text}`;
@@ -645,7 +645,6 @@ bot.onText(/\/lang/, (msg) => {
   } else {
     console.error('groupId is not defined!');
   }
-});
 
   
 
