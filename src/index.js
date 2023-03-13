@@ -183,8 +183,7 @@ function getTemperatureEmoji(temperature) {
     
 
 
-
-  const groupId = process.env.groupId;
+const groupId = process.env.groupId;
 
 // Comando /stats
 bot.onText(/\/stats/, async (msg, match) => {
@@ -200,20 +199,16 @@ bot.onText(/\/stats/, async (msg, match) => {
 });
 
 // Enviar mensagem sempre que um novo usuário for salvo no banco de dados
-
 UserModel.on('save', (user) => {
-
   const message = `#climatologia #New_User\n\n*User:* ${user.firstName} ${user.lastName}\n*ID:* ${user._id}\n*Username:* ${user.username}`;
-
   bot.sendMessage(groupId, message);
-
 });
 
 bot.on('polling_error', (error) => {
-
   console.error(error);
-
 });
+
+  
 
 
 
