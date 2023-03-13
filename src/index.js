@@ -216,22 +216,29 @@ bot.onText(/\/start/, async (msg) => {
     });
     await user.save();
     
-     const groupId = process.env.groupId;
-    // Monitora o evento de adição de um novo usuário
-    UserModel.watch().on('insert', async data => {
-      const user = data.fullDocument;
-      const message = `#climatologia #New_User\n\n*User:* ${user.firstName} ${user.lastName}\n*ID:* ${user.userID}\n*Username:* ${user.username}`;
-      if (groupId) {
-        bot.sendMessage(groupId, message);
-        } else {
-        console.error('groupId não está definido!');
-      }
-    });
+     // Send message to group
+    const message = `#climatologia #New_User\n\n*User:* ${user.firstName} ${user.lastName}\n*ID:* ${user.userID}\n*Username:* ${user.username}`;
+    if (groupId) {
+      bot.sendMessage(groupId, message);
+    } else {
+      console.error('groupId não está definido!');
+    }
   } else {
     // If user exists, update their lang in the database (in case it has changed)
     i18n.setLocale(user.lang);
   }
+});
 
+// Monitora o evento de adição de um novo usuário
+UserModel.watch().on('insert', async data => {
+  const user = data.fullDocument;
+  const message = `#climatologia #New_User\n\n*User:* ${user.firstName} ${user.lastName}\n*ID:* ${user.userID}\n*Username:* ${user.username}`;
+  if (groupId) {
+    bot.sendMessage(groupId, message);
+  } else {
+    console.error('groupId não está definido!');
+  }
+});
   // Send message with two buttons for URL and choosing language
   bot.sendMessage(chatId, i18n.__('startMessage'), {
     parse_mode: 'markdown',
