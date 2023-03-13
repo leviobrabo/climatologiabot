@@ -194,15 +194,19 @@ bot.onText(/\/stats/, async (msg, match) => {
   }
 });
 
-  const groupId = process.env.groupId;
-  // Enviar mensagem sempre que um novo usuário for salvo no banco de dados
+const groupId = process.env.groupId;
+// Enviar mensagem sempre que um novo usuário for salvo no banco de dados
 UserModel.on('save', (user) => {
-    const message = `#Climatologiabot #New_Bot \n\n${user.username}\n (${user.firstName} \n${user.lastName})`;
-  bot.sendMessage(groupId, message);
+  const message = `#Climatologia #New_User
+  <b>User:</b> <a href="tg://user?id=${user.id}">${user.first_name}</a>
+  <b>ID:</b> <code>${user.id}</code>
+  <b>Username:</b> ${user.username ? `@${user.username}` : "Não informado"}`;
+bot.sendMessage(groupId, message, { parse_mode: "HTML" })
 });
 bot.on('polling_error', (error) => {
-  console.error(error);
+console.error(error);
 });
+
 
 
 
