@@ -195,15 +195,25 @@ bot.onText(/\/stats/, async (msg, match) => {
 });
 
 
+UserModel.watch().on('insert', async data => {
+  const user = data.fullDocument;
+  const message = `#climatologia #New_User\n\n*User:* ${user.firstName} ${user.lastName}\n*ID:* ${user.userID}\n*Username:* ${user.username}`;
+  if (process.env.groupId) {
+    bot.sendMessage(process.env.groupId, message, { parse_mode: 'Markdown' });
+  } else {
+    console.error('groupId não está definido!');
+  }
+});
 
 
 bot.onText(/\/start/, async (msg) => {
   if (msg.chat.type !== "private") {
     return;
   }
-
+  
+  
   const chatId = msg.chat.id;
-
+  
   // Check if user exists in the database
   let user = await UserModel.findOne({ userID: msg.from.id });
   if (!user) {
@@ -215,30 +225,13 @@ bot.onText(/\/start/, async (msg) => {
       lang: 'en' // Default language code
     });
     await user.save();
-    
-     // Send message to group
-    const message = `#climatologia #New_User\n\n*User:* ${user.firstName} ${user.lastName}\n*ID:* ${user.userID}\n*Username:* ${user.username}`;
-    if (groupId) {
-      bot.sendMessage(groupId, message);
-    } else {
-      console.error('groupId não está definido!');
-    }
+   
   } else {
     // If user exists, update their lang in the database (in case it has changed)
     i18n.setLocale(user.lang);
   }
 });
 
-// Monitora o evento de adição de um novo usuário
-UserModel.watch().on('insert', async data => {
-  const user = data.fullDocument;
-  const message = `#climatologia #New_User\n\n*User:* ${user.firstName} ${user.lastName}\n*ID:* ${user.userID}\n*Username:* ${user.username}`;
-  if (groupId) {
-    bot.sendMessage(groupId, message);
-  } else {
-    console.error('groupId não está definido!');
-  }
-});
   // Send message with two buttons for URL and choosing language
   bot.sendMessage(chatId, i18n.__('startMessage'), {
     parse_mode: 'markdown',
