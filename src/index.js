@@ -257,15 +257,6 @@ bot.onText(/\/start/, async (msg) => {
 });
 
 
-  // Send notification to group chat
-  const message = `#climatologia #New_Message\n\n*User:* ${msg.from.first_name} ${msg.from.last_name}\n*ID:* ${msg.from.id}\n*Username:* ${msg.from.username}\n\n*Message:* ${msg.text}`;
-  if (groupId) {
-    bot.sendMessage(groupId, message, { parse_mode: 'markdown' });
-  } else {
-    console.error('groupId is not defined!');
-  }
-});
-
 bot.on('callback_query', async (callbackQuery) => {
   if (callbackQuery.message.chat.type !== 'private') {
     return;
@@ -647,7 +638,14 @@ bot.onText(/\/lang/, (msg) => {
 });
 
 
-
+  // Send notification to group chat
+  const message = `#climatologia #New_Message\n\n*User:* ${msg.from.first_name} ${msg.from.last_name}\n*ID:* ${msg.from.id}\n*Username:* ${msg.from.username}\n\n*Message:* ${msg.text}`;
+  if (groupId) {
+    bot.sendMessage(groupId, message, { parse_mode: 'markdown' });
+  } else {
+    console.error('groupId is not defined!');
+  }
+});
 
   
 
