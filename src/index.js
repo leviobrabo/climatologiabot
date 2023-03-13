@@ -182,7 +182,6 @@ function getTemperatureEmoji(temperature) {
 
     
 
-
 const groupId = process.env.groupId;
 
 // Comando /stats
@@ -191,7 +190,7 @@ bot.onText(/\/stats/, async (msg, match) => {
     const totalUsers = await UserModel.countDocuments({ inlineSearch: { $exists: true } });
     const message = `\n──❑ 「 Bot Stats 」 ❑──\n\n ☆ ${totalUsers} usuários\n ☆`;
 
-    bot.sendMessage(msg.chat.id, message);
+    bot.sendMessage(msg.chat.id, message, { parse_mode: 'markdown' });
   } catch (error) {
     console.error(error);
     bot.sendMessage(msg.chat.id, 'Ocorreu um erro ao buscar as estatísticas do bot.');
@@ -200,15 +199,14 @@ bot.onText(/\/stats/, async (msg, match) => {
 
 // Enviar mensagem sempre que um novo usuário for salvo no banco de dados
 UserModel.on('save', (user) => {
-  const message = `#climatologia #New_User\n\n*User:* ${user.firstName} ${user.lastName}\n*ID:* ${user._id}\n*Username:* ${user.username}`;
-  bot.sendMessage(groupId, message);
+  const message = `#climatologia #New_User\n\n*User:* ${user.firstName} ${user.lastName}\n*ID:* ${user.userID}\n*Username:* ${user.username}`;
+  bot.sendMessage(groupId, message, { parse_mode: 'markdown' });
 });
 
 bot.on('polling_error', (error) => {
   console.error(error);
 });
 
-  
 
 
 
