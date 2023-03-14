@@ -21,5 +21,7 @@
     "description_error": "Impossible d'obtenir les prévisions météo.",
     "startlanguptdate": "Démarrer",
     "back": "⬅️ Retour",
-    "help": "❓ Aide"
+    "help": "❓ Aide",
+    "pv_message_lang": "⚙️ Veuillez cliquer sur le bouton ci-dessous pour changer la langue dans un chat privé.",
+    "pv_message_lang_button": "🇫🇷 Changer de langue"
  }
