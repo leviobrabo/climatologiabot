@@ -88,7 +88,7 @@ bot.on('inline_query', async (query) => {
       const emoji = getTemperatureEmoji(temperature);
       const countryCode = weatherData.sys.country || "";
       const now = new Date();
-      const horarioFormatado= now.toLocaleString
+      const horarioFormatado = now.toLocaleTimeString();
 
 
 
