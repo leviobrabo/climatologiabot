@@ -15,7 +15,7 @@
     "title_message_hidden": "आपके शहर🌤️ के लिए मौसम का पूर्वानुमान",
     "description_hidden": "{{cityName}} - {{countryCode}} का मौसम देखें \nध्यान दें: शहर का नाम छिपा हुआ है",
     "title_message_visible": "आपके शहर🌤️ के लिए मौसम का पूर्वानुमान",
-    "description_visible": "{{cityName} - {{countryCode}} का मौसम देखें \nध्यान दें: शहर का नाम दिखाई दे रहा है",
+    "description_visible": "{{cityName}} - {{countryCode}} का मौसम देखें \nध्यान दें: शहर का नाम दिखाई दे रहा है",
     "erro_message": "मौसम का पूर्वानुमान प्राप्त करने में असमर्थ। कृपया बाद में पुनः प्रयास करें।",
     "title_error": "ओह! एक त्रुटि हुई",
     "description_error": "मौसम पूर्वानुमान प्राप्त करने में असमर्थ।",
