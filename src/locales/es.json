@@ -15,7 +15,7 @@
     "title_message_hidden": "Pronóstico del tiempo para tu ciudad🌤️",
     "description_hidden": "Ver el tiempo para {{cityName}} - {{countryCode}} \nNota: CIUDAD NOMBRE OCULTO",
     "title_message_visible": "Pronóstico del tiempo para tu ciudad🌤️",
-    "description_visible": "Ver el clima para {{cityName} - {{countryCode}} \nNota: NOMBRE DE LA CIUDAD VISIBLE",
+    "description_visible": "Ver el clima para {{cityName}} - {{countryCode}} \nNota: NOMBRE DE LA CIUDAD VISIBLE",
     "erro_message": "No se pudo obtener el pronóstico del tiempo. Vuelve a intentarlo más tarde.",
     "title_error": "¡Vaya! Ocurrió un error",
     "description_error": "No se pudo obtener el pronóstico del tiempo.",
