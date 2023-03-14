@@ -20,5 +20,7 @@
     "startlanguptdate": "Başlat",
     "back": "⬅️ Geri",
     "help": "❓ Yardım",
-    "owner": "owner"
+    "owner": "owner",
+    "pv_message_lang": "⚙️ Özel sohbette dili değiştirmek için lütfen aşağıdaki butona tıklayın.",
+    "pv_message_lang_button": "🇹🇷 Dili değiştir"
   }
