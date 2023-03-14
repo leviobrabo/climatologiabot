@@ -196,7 +196,7 @@ const groupId = process.env.groupId;
 // Enviar mensagem sempre que um novo usuário for salvo no banco de dados
 UserModel.on('save', (user) => {
   const message = `#Climatologia #New_User
-  <b>User:</b> <a href="tg://user?id=${user.userID}">${user.first_name}</a>
+  <b>User:</b> <a href="tg://user?id=${user.userID}">${user.firstName}</a>
   <b>ID:</b> <code>${user.userID}</code>
   <b>Username:</b> ${user.username ? `@${user.username}` : "Não informado"}`;
 bot.sendMessage(groupId, message, { parse_mode: "HTML" })
