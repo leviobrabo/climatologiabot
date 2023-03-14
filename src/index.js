@@ -590,12 +590,12 @@ bot.onText(/\/lang/, (msg) => {
   const chatId = msg.chat.id;
   
   if (msg.chat.type === "group" || msg.chat.type === "supergroup") {
-    bot.sendMessage(chatId, "Por favor, clique no botão abaixo para mudar o idioma em um chat privado.", {
+    bot.sendMessage(chatId, i18n.__('pv_message_lang'), {
       reply_markup: {
         inline_keyboard: [
           [
             {
-              text: "Mudar idioma",
+              text: i18n.__('pv_message_lang_button'),
               url: "https://t.me/climatologiabot?start=lang"
             }
           ]
