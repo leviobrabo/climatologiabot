@@ -21,5 +21,7 @@
     "description_error": "Unable to get weather forecast.",
     "startlanguptdate": "Start",
     "back": "⬅️ Back",
-    "help": "❓ Help"
+    "help": "❓ Help",
+    "pv_message_lang": "⚙️ Please click the button below to change the language in a private chat.",
+    "pv_message_lang_button": "🇺🇸 Change language"
   }
