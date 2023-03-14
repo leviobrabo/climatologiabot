@@ -596,7 +596,7 @@ bot.onText(/\/lang/, (msg) => {
           [
             {
               text: "Mudar idioma",
-              url: "https://t.me/seubot?start=lang"
+              url: "https://t.me/climatologiabot?start=lang"
             }
           ]
         ]
