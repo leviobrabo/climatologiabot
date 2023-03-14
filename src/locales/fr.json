@@ -15,7 +15,7 @@
     "title_message_hidden": "Prévisions météo pour votre ville🌤️",
     "description_hidden": "Voir la météo pour {{cityName}} - {{countryCode}} \nRemarque: CITY NAME HIDDEN",
     "title_message_visible": "Prévisions météo pour votre ville🌤️",
-    "description_visible": "Voir la météo pour {{cityName} - {{countryCode}} \nRemarque: VISIBLE CITY NAME",
+    "description_visible": "Voir la météo pour {{cityName}} - {{countryCode}} \nRemarque: VISIBLE CITY NAME",
     "erro_message": "Impossible d'obtenir les prévisions météo. Veuillez réessayer plus tard.",
     "title_error": "Oups! Une erreur s'est produite",
     "description_error": "Impossible d'obtenir les prévisions météo.",
