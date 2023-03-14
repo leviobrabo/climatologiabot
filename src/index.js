@@ -87,9 +87,8 @@ bot.on('inline_query', async (query) => {
       const humidity = weatherData.main.humidity;
       const emoji = getTemperatureEmoji(temperature);
       const countryCode = weatherData.sys.country || "";
-      const agora = new Date();
-      const options = { timeZone: 'America/Sao_Paulo', hour12: false };
-      const horarioFormatado = agora.toLocaleString('pt-BR', options);
+      const now = new Date();
+      const horarioFormatado= now.toLocaleString
 
 
 
