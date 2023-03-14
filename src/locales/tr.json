@@ -13,7 +13,7 @@
     "title_message_hidden": "Şehriniz için hava tahmini🌤️",
     "description_hidden": "{{cityName}} - {{countryCode}} için hava durumunu görün \nNot: CITY NAME HIDDEN",
     "title_message_visible": "Şehriniz için hava tahmini🌤️",
-    "description_visible": "{{cityName} - {{countryCode}} için hava durumunu görün \nNot: GÖRÜNÜR ŞEHİR ADI",
+    "description_visible": "{{cityName}} - {{countryCode}} için hava durumunu görün \nNot: GÖRÜNÜR ŞEHİR ADI",
     "erro_message": "Hava tahmini alınamadı. Lütfen daha sonra tekrar deneyin.",
     "title_error": "Hata! Bir hata oluştu",
     "description_error": "Hava tahmini alınamadı.",
