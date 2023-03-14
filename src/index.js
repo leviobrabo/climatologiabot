@@ -587,10 +587,23 @@ bot.on('callback_query', async (callbackQuery) => {
 
 // Handle command to choose language
 bot.onText(/\/lang/, (msg) => {
-  if (msg.chat.type !== "private") {
+  const chatId = msg.chat.id;
+  
+  if (msg.chat.type === "group" || msg.chat.type === "supergroup") {
+    bot.sendMessage(chatId, "Por favor, clique no botão abaixo para mudar o idioma em um chat privado.", {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: "Mudar idioma",
+              url: "https://t.me/seubot?start=lang"
+            }
+          ]
+        ]
+      }
+    });
     return;
   }
-  const chatId = msg.chat.id;
 
   // Send message with language options to choose
   bot.sendMessage(chatId, i18n.__('chooseLanguage'), {
