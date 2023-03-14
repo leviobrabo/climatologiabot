@@ -21,7 +21,9 @@
   "description_error": "Não foi possível obter a previsão do tempo.",
   "startlanguptdate": "Início",
   "back": "⬅️ Volta",
-  "help": "❓ Ajuda"
+  "help": "❓ Ajuda",
+  "pv_message_lang": "⚙️ Clique no botão abaixo para alterar o idioma em um chat privado.",
+  "pv_message_lang_button": "🇧🇷 Alterar idioma"
 }
 
 
