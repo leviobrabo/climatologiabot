@@ -22,5 +22,6 @@
     "help": "❓ Yardım",
     "owner": "owner",
     "pv_message_lang": "⚙️ Özel sohbette dili değiştirmek için lütfen aşağıdaki butona tıklayın.",
-    "pv_message_lang_button": "🇹🇷 Dili değiştir"
+    "pv_message_lang_button": "🇹🇷 Dili değiştir",
+    "git_to_use": "Bu bot nasıl kullanılır"
   }
