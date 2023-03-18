@@ -23,5 +23,6 @@
     "back": "⬅️ Atrás",
     "help": "❓ Ayuda",
     "pv_message_lang": "⚙️ Haz clic en el botón de abajo para cambiar el idioma en un chat privado.",
-     "pv_message_lang_button": "🇪🇸 Cambiar idioma"
+    "pv_message_lang_button": "🇪🇸 Cambiar idioma",
+    "git_to_use": "Cómo usar este bot"
   }
