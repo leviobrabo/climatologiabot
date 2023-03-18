@@ -292,8 +292,8 @@ bot.on('callback_query', async (callbackQuery) => {
           ],
           [
             {
-              text: i18n.__('video_example'),
-              callback_data: 'video_example'
+              text: i18n.__('git_to_use'),
+              url: 'https://t.me/+2w5cw249tXkxMWUx'
             }
           ],
           [
