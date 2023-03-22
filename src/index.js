@@ -751,7 +751,14 @@ bot.on("new_chat_members", async (msg) => {
     const chatName = msg.chat.title;
 
     try {
-        // Armazena o grupo no banco de dados
+        const exists = await ChatModel.exists({ chatId: chatId });
+        if (exists) {
+            console.log(
+                `Grupo ${chatName} (${chatId}) já existe no banco de dados`
+            );
+            return;
+        }
+
         const chat = await ChatModel.create({ chatId, chatName });
         console.log(
             `Grupo ${chat.chatName} (${chat.chatId}) adicionado ao banco de dados`
