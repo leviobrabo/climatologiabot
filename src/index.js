@@ -7,38 +7,35 @@ const i18n = require("i18n");
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 
-const bot = new TelegramBot(token, { polling: true }); // URL base da API do OpenWeatherMap
+const bot = new TelegramBot(token, { polling: true });
 
 i18n.configure({
-    locales: ["en", "pt", "ru", "es", "fr", "hi", "it", "tr", "uk"], // Supported locales
-    directory: __dirname + "/locales", // Path to locale files
-    defaultLocale: "en", // Default locale
-    queryParameter: "lang", // Query parameter to set locale
-    cookie: "language", // Cookie to set locale
+    locales: ["en", "pt", "ru", "es", "fr", "hi", "it", "tr", "uk"],
+    directory: __dirname + "/locales",
+    defaultLocale: "en",
+    queryParameter: "lang",
+    cookie: "language",
     indent: "  ",
 });
 
 const weatherBaseUrl = "https://api.openweathermap.org/data/2.5/weather";
-// Função para buscar o idioma do usuário no banco de dados
+
 async function getUserLanguage(userId) {
     const user = await UserModel.findOne({ userID: userId });
 
     if (!user) {
-        // Usuário não encontrado, retorna o idioma padrão
         return i18n.defaultLocale;
     }
 
     return user.lang;
 }
 
-// Tratamento da query do usuário
 bot.on("inline_query", async (query) => {
     const userId = query.from.id;
     const userLanguage = await getUserLanguage(userId);
     const cityName = query.query;
 
     if (!cityName) {
-        // Envia mensagem com instruções de uso do bot
         await bot.answerInlineQuery(query.id, [], {
             switch_pm_text: i18n.__("how_to_use"),
             switch_pm_parameter: "how_to_use",
@@ -72,12 +69,10 @@ bot.on("inline_query", async (query) => {
     i18n.setLocale(lang);
 
     try {
-        // Requisição para obter informações meteorológicas da cidade
         const response = await axios.get(
             `${weatherBaseUrl}?q=${cityName}&appid=${process.env.WEATHER_API_KEY}&units=${units}&lang=${lang}`
         );
 
-        // Dados da resposta
         const weatherData = response.data;
         const temperature = Math.round(weatherData.main.temp);
         const weatherDescription = weatherData.weather[0].description;
@@ -91,10 +86,8 @@ bot.on("inline_query", async (query) => {
         const opcoes = { timeZone: "America/Sao_Paulo" };
         const horarioFormatado = agora.toLocaleTimeString("pt-BR", opcoes);
 
-        // URL da imagem do ícone do tempo
         const weatherIconUrl = `http://openweathermap.org/img/wn/${weatherIconCode}.png`;
 
-        // Mensagem de resposta com a previsão do tempo
         const message = i18n.__("weather_forecast_message", {
             emoji,
             temperature,
@@ -127,7 +120,6 @@ bot.on("inline_query", async (query) => {
             countryCode,
         });
 
-        // Resultado da query com a mensagem e a imagem
         const result = [
             {
                 type: "article",
@@ -136,7 +128,7 @@ bot.on("inline_query", async (query) => {
                 description: description_hidden,
                 input_message_content: {
                     message_text: message,
-                    parse_mode: "markdown", // Adicionando parse_mode como markdown
+                    parse_mode: "markdown",
                 },
                 thumb_url: weatherIconUrl,
             },
@@ -147,19 +139,17 @@ bot.on("inline_query", async (query) => {
                 description: description_visible,
                 input_message_content: {
                     message_text: message1,
-                    parse_mode: "markdown", // Adicionando parse_mode como markdown
+                    parse_mode: "markdown",
                 },
                 thumb_url: weatherIconUrl,
             },
         ];
 
-        // Envio do resultado da query
         bot.answerInlineQuery(query.id, result);
         console.log(result);
     } catch (error) {
         console.log(error);
 
-        // Caso ocorra algum erro na requisição, envia uma mensagem de erro para o usuário
         const errorMessage = i18n.__("erro_message");
         const errorResult = [
             {
@@ -208,7 +198,7 @@ bot.onText(/\/stats/, async (msg) => {
 });
 
 const groupId = process.env.groupId;
-// Enviar mensagem sempre que um novo usuário for salvo no banco de dados
+
 UserModel.on("save", (user) => {
     const message = `#Climatologia #New_User
   <b>User:</b> <a href="tg://user?id=${user.userID}">${user.firstName}</a>
@@ -227,23 +217,19 @@ bot.onText(/\/start/, async (msg) => {
 
     const chatId = msg.chat.id;
 
-    // Check if user exists in the database
     let user = await UserModel.findOne({ userID: msg.from.id });
     if (!user) {
-        // If user does not exist, create a new user
         user = new UserModel({
             firstName: msg.from.first_name,
             userID: msg.from.id,
             username: msg.from.username,
-            lang: "en", // Default language code
+            lang: "en",
         });
         await user.save();
     } else {
-        // If user exists, update their lang in the database (in case it has changed)
         i18n.setLocale(user.lang);
     }
 
-    // Send message with two buttons for URL and choosing language
     bot.sendMessage(chatId, i18n.__("startMessage"), {
         parse_mode: "markdown",
         disable_web_page_preview: true,
@@ -285,7 +271,6 @@ bot.on("callback_query", async (callbackQuery) => {
     const messageId = callbackQuery.message.message_id;
 
     if (callbackQuery.data === "help") {
-        // Send message with two buttons to choose language
         await bot.editMessageText(i18n.__("help_message"), {
             parse_mode: "markdown",
             disable_web_page_preview: true,
@@ -321,7 +306,6 @@ bot.on("callback_query", async (callbackQuery) => {
     }
 
     if (callbackQuery.data === "choose_language") {
-        // Send message with two buttons to choose language
         await bot.editMessageText(i18n.__("chooseLangMessage"), {
             parse_mode: "markdown",
             disable_web_page_preview: true,
@@ -381,7 +365,6 @@ bot.on("callback_query", async (callbackQuery) => {
             },
         });
     } else if (callbackQuery.data === "choose_portuguese") {
-        // Update user language in the database
         const user = await UserModel.findOneAndUpdate(
             { userID: callbackQuery.from.id },
             { lang: "pt" },
@@ -389,7 +372,6 @@ bot.on("callback_query", async (callbackQuery) => {
         );
         i18n.setLocale(user.lang);
 
-        // Send a message to the user to confirm that their language has been changed
         await bot.editMessageText(i18n.__("langChangedMessage"), {
             chat_id: chatId,
             message_id: messageId,
@@ -405,7 +387,6 @@ bot.on("callback_query", async (callbackQuery) => {
             },
         });
     } else if (callbackQuery.data === "choose_english") {
-        // Update user language in the database
         const user = await UserModel.findOneAndUpdate(
             { userID: callbackQuery.from.id },
             { lang: "en" },
@@ -413,7 +394,6 @@ bot.on("callback_query", async (callbackQuery) => {
         );
         i18n.setLocale(user.lang);
 
-        // Send a message to the user to confirm that their language has been changed
         await bot.editMessageText(i18n.__("langChangedMessage"), {
             chat_id: chatId,
             message_id: messageId,
@@ -429,7 +409,6 @@ bot.on("callback_query", async (callbackQuery) => {
             },
         });
     } else if (callbackQuery.data === "choose_russian") {
-        // Update user language in the database
         const user = await UserModel.findOneAndUpdate(
             { userID: callbackQuery.from.id },
             { lang: "ru" },
@@ -437,7 +416,6 @@ bot.on("callback_query", async (callbackQuery) => {
         );
         i18n.setLocale(user.lang);
 
-        // Send a message to the user to confirm that their language has been changed
         await bot.editMessageText(i18n.__("langChangedMessage"), {
             chat_id: chatId,
             message_id: messageId,
@@ -453,7 +431,6 @@ bot.on("callback_query", async (callbackQuery) => {
             },
         });
     } else if (callbackQuery.data === "choose_spanish") {
-        // Update user language in the database
         const user = await UserModel.findOneAndUpdate(
             { userID: callbackQuery.from.id },
             { lang: "es" },
@@ -461,7 +438,6 @@ bot.on("callback_query", async (callbackQuery) => {
         );
         i18n.setLocale(user.lang);
 
-        // Send a message to the user to confirm that their language has been changed
         await bot.editMessageText(i18n.__("langChangedMessage"), {
             chat_id: chatId,
             message_id: messageId,
@@ -477,7 +453,6 @@ bot.on("callback_query", async (callbackQuery) => {
             },
         });
     } else if (callbackQuery.data === "choose_french") {
-        // Update user language in the database
         const user = await UserModel.findOneAndUpdate(
             { userID: callbackQuery.from.id },
             { lang: "fr" },
@@ -485,7 +460,6 @@ bot.on("callback_query", async (callbackQuery) => {
         );
         i18n.setLocale(user.lang);
 
-        // Send a message to the user to confirm that their language has been changed
         await bot.editMessageText(i18n.__("langChangedMessage"), {
             chat_id: chatId,
             message_id: messageId,
@@ -501,7 +475,6 @@ bot.on("callback_query", async (callbackQuery) => {
             },
         });
     } else if (callbackQuery.data === "choose_hindi") {
-        // Update user language in the database
         const user = await UserModel.findOneAndUpdate(
             { userID: callbackQuery.from.id },
             { lang: "hi" },
@@ -509,7 +482,6 @@ bot.on("callback_query", async (callbackQuery) => {
         );
         i18n.setLocale(user.lang);
 
-        // Send a message to the user to confirm that their language has been changed
         await bot.editMessageText(i18n.__("langChangedMessage"), {
             chat_id: chatId,
             message_id: messageId,
@@ -525,7 +497,6 @@ bot.on("callback_query", async (callbackQuery) => {
             },
         });
     } else if (callbackQuery.data === "choose_italian") {
-        // Update user language in the database
         const user = await UserModel.findOneAndUpdate(
             { userID: callbackQuery.from.id },
             { lang: "it" },
@@ -533,7 +504,6 @@ bot.on("callback_query", async (callbackQuery) => {
         );
         i18n.setLocale(user.lang);
 
-        // Send a message to the user to confirm that their language has been changed
         await bot.editMessageText(i18n.__("langChangedMessage"), {
             chat_id: chatId,
             message_id: messageId,
@@ -549,7 +519,6 @@ bot.on("callback_query", async (callbackQuery) => {
             },
         });
     } else if (callbackQuery.data === "choose_turkish") {
-        // Update user language in the database
         const user = await UserModel.findOneAndUpdate(
             { userID: callbackQuery.from.id },
             { lang: "tr" },
@@ -557,7 +526,6 @@ bot.on("callback_query", async (callbackQuery) => {
         );
         i18n.setLocale(user.lang);
 
-        // Send a message to the user to confirm that their language has been changed
         await bot.editMessageText(i18n.__("langChangedMessage"), {
             chat_id: chatId,
             message_id: messageId,
@@ -573,7 +541,6 @@ bot.on("callback_query", async (callbackQuery) => {
             },
         });
     } else if (callbackQuery.data === "choose_ukrainian") {
-        // Update user language in the database
         const user = await UserModel.findOneAndUpdate(
             { userID: callbackQuery.from.id },
             { lang: "uk" },
@@ -581,7 +548,6 @@ bot.on("callback_query", async (callbackQuery) => {
         );
         i18n.setLocale(user.lang);
 
-        // Send a message to the user to confirm that their language has been changed
         await bot.editMessageText(i18n.__("langChangedMessage"), {
             chat_id: chatId,
             message_id: messageId,
@@ -597,7 +563,6 @@ bot.on("callback_query", async (callbackQuery) => {
             },
         });
     } else if (callbackQuery.data === "back_to_start") {
-        // Send message with two buttons for URL and choosing language
         await bot.editMessageText(i18n.__("startMessage"), {
             chat_id: chatId,
             message_id: messageId,
@@ -633,7 +598,6 @@ bot.on("callback_query", async (callbackQuery) => {
     }
 });
 
-// Handle command to choose language
 bot.onText(/\/lang/, (msg) => {
     const chatId = msg.chat.id;
 
@@ -653,7 +617,6 @@ bot.onText(/\/lang/, (msg) => {
         return;
     }
 
-    // Send message with language options to choose
     bot.sendMessage(chatId, i18n.__("chooseLanguage"), {
         parse_mode: "markdown",
         disable_web_page_preview: true,
@@ -718,7 +681,6 @@ bot.onText(/\/help/, (msg) => {
     }
     const chatId = msg.chat.id;
 
-    // Obtendo a mensagem de ajuda na língua do usuário
     const helpMessage = i18n.__("help_message");
 
     bot.sendPhoto(
@@ -772,7 +734,6 @@ bot.on("left_chat_member", async (msg) => {
     const chatId = msg.chat.id;
 
     try {
-        // Remove o grupo do banco de dados
         const chat = await ChatModel.findOneAndDelete({ chatId });
         console.log(
             `Grupo ${chat.chatName} (${chat.chatId}) removido do banco de dados`
