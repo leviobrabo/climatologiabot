@@ -1,5 +1,5 @@
 {
-    "startMessage": "Bonjour, je suis *Janna*! \n\n_Je suis un bot qui vous envoie les données de prévisions météo pour votre ville._ 😄!\n\n*Climatolgiabot - Chaîne officielle📬:* [Cliquez ici](https://t.me/climatologiaofc)",
+    "startMessage": "Bonjour, je suis *Janna*! \n\n_Je suis un bot qui vous envoie les données de prévisions météo pour votre ville._ 😄!\n\n*📬Climatolgiabot - Chaîne officielle:* [Cliquez ici](https://t.me/climatologiaofc)\n\n📦*Mon code source:* [GitHub](https://github.com/leviobrabo/climatologiabot)",
     "addGroup": "✨ Ajoutez-moi à votre groupe",
     "owner": "👨‍💻 Soutien",
     "help_message": "Bonjour! Je suis un *bot météo.* \n\nVous pouvez m'utiliser en ligne, cela signifie que vous n'avez pas besoin de m'ajouter à des groupes, saisissez simplement mon nom d'utilisateur et le nom de ma ville. testez et envoyez le prévisions météo dans votre ville... \n\nPar exemple: `@climatologiabot Paris`\nUtilisez le bot pour partager la météo de votre ville.",
@@ -7,11 +7,11 @@
     "support_button": "👨‍💻 Assistance",
     "langMessage": "🇫🇷 Langue",
     "chooseLanguage": "Sélectionnez la langue que vous souhaitez utiliser dans le bot",
-    "langChangedMessage": "Votre langue a été réglée sur le français 🇫🇷",    
+    "langChangedMessage": "Votre langue a été réglée sur le français 🇫🇷",
     "chooseLangMessage": "Sélectionnez la langue que vous souhaitez utiliser dans le bot:",
     "how_to_use": "Comment utiliser le bot",
     "weather_forecast_message": "*Prévisions météo pour votre ville {{emoji}}*\n\n🌡️ *Température:* {{temperature}}°C\n🌤️ *Description:* {{weatherDescription}} \n🏖 *Sensation thermique:* {{feelsLike}}°C\n💨 *Vitesse du vent:* {{windSpeed}} km/h \n💦 *Humidité relative ar:* {{humidity}}% \n🌎 *Pays:* {{countryCode}} \n\n🔍 *Récupéré à:* {{horarioFormatado}} (UTC−3)",
-    "city_weather_forecast_message": "*Prévisions météo pour {{cityName}} {{emoji}}* \n\n🏙️ *Ville:* {{cityName}} \n🌡️ *Température:* {{temperature}}°C\n🌤️ *Description:* {{weatherDescription}} \n🏖 *Sensation thermique:* {{feelsLike}}°C\n💨 *Vitesse du vent:* {{windSpeed}} km/h \n💦 *Humidité relative ar:* {{humidity}}% \n🌎 *Pays:* {{countryCode}} \n\n🔍 *Récupéré à:* {{horarioFormatado}} (UTC−3)",    
+    "city_weather_forecast_message": "*Prévisions météo pour {{cityName}} {{emoji}}* \n\n🏙️ *Ville:* {{cityName}} \n🌡️ *Température:* {{temperature}}°C\n🌤️ *Description:* {{weatherDescription}} \n🏖 *Sensation thermique:* {{feelsLike}}°C\n💨 *Vitesse du vent:* {{windSpeed}} km/h \n💦 *Humidité relative ar:* {{humidity}}% \n🌎 *Pays:* {{countryCode}} \n\n🔍 *Récupéré à:* {{horarioFormatado}} (UTC−3)",
     "title_message_hidden": "Prévisions météo pour votre ville🌤️",
     "description_hidden": "Voir la météo pour {{cityName}} - {{countryCode}} \nRemarque: CITY NAME HIDDEN",
     "title_message_visible": "Prévisions météo pour votre ville🌤️",
@@ -25,4 +25,4 @@
     "pv_message_lang": "⚙️ Veuillez cliquer sur le bouton ci-dessous pour changer la langue dans un chat privé.",
     "pv_message_lang_button": "🇫🇷 Changer de langue",
     "git_to_use": "Comment utiliser ce bot"
- }
+}
