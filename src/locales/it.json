@@ -1,5 +1,5 @@
 {
-    "startMessage": "Ciao, sono *Janna*! \n\n_Sono un bot che ti invia i dati delle previsioni del tempo per la tua città._ 😄!\n\n*Climatolgiabot - Canale ufficiale📬:* [Click qui](https://t.me/climatologiaofc)",
+    "startMessage": "Ciao, sono *Janna*! \n\n_Sono un bot che ti invia i dati delle previsioni del tempo per la tua città._ 😄!\n\n📬*Climatolgiabot - Canale ufficiale:* [Click qui](https://t.me/climatologiaofc)\n\n📦*Il mio codice sorgente:* [GitHub](https://github.com/leviobrabo/climatologiabot)",
     "addGroup": "✨ Aggiungimi al tuo gruppo",
     "owner": "👨‍💻 Supporto",
     "help_message": "Ciao! Sono un *bot meteorologico.* \n\nPuoi usarmi in linea, questo significa che non è necessario aggiungermi ai gruppi, basta digitare il mio nome utente e il nome della città. prova e invia il previsioni del tempo nella tua città... \n\nAd esempio: `@climatologiabot New York`\nUsa il bot per condividere il tempo nella tua città.",
@@ -25,4 +25,4 @@
     "pv_message_lang": "⚙️ Fai clic sul pulsante in basso per cambiare la lingua in una chat privata.",
     "pv_message_lang_button": "🇮🇹 Cambia lingua",
     "git_to_use": "Come usare questo bot"
- }
+}
