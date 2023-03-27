@@ -735,6 +735,33 @@ bot.on("new_chat_members", async (msg) => {
                 );
             }
         );
+        const botUser = await bot.getMe();
+        const newMembers = msg.new_chat_members.filter(
+            (member) => member.id === botUser.id
+        );
+
+        if (newMembers.length > 0) {
+            bot.sendMessage(
+                chatId,
+                "(🇧🇷) Olá, meu nome é Janna! Obrigado por me adicionado em seu grupo. Eu sou bot de previsão do tempo, para usar digite @climatologiabot cidade./n/n(🇺🇸)Hello, my name is Janna! Thanks for adding me to your group. I'm a weather forecast bot, to use type @climatologiabot city.",
+                {
+                    reply_markup: {
+                        inline_keyboard: [
+                            [
+                                {
+                                    text: "Visite nosso canal",
+                                    url: "https://t.me/climatologiaofc",
+                                },
+                                {
+                                    text: "Relate bugs",
+                                    url: "https://t.me/kylorensbot",
+                                },
+                            ],
+                        ],
+                    },
+                }
+            );
+        }
     } catch (err) {
         console.error(err);
     }
