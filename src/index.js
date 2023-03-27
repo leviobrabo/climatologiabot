@@ -725,6 +725,16 @@ bot.on("new_chat_members", async (msg) => {
         console.log(
             `Grupo ${chat.chatName} (${chat.chatId}) adicionado ao banco de dados`
         );
+        const message = `#Climatologiabot #New_Group
+    <b>Group:</b> <a href="tg://resolve?domain=${chat.chatName}&amp;id=${chat.chatId}">${chat.chatName}</a>
+    <b>ID:</b> <code>${chat.chatId}</code>`;
+        bot.sendMessage(groupId, message, { parse_mode: "HTML" }).catch(
+            (error) => {
+                console.error(
+                    `Erro ao enviar mensagem para o grupo ${groupId}: ${error}`
+                );
+            }
+        );
     } catch (err) {
         console.error(err);
     }
@@ -741,17 +751,6 @@ bot.on("left_chat_member", async (msg) => {
     } catch (err) {
         console.error(err);
     }
-});
-
-ChatModel.on("save", (chat) => {
-    const message = `#Climatologiabot #New_Group
-  <b>Group:</b> <a href="tg://resolve?domain=${chat.chatName}&amp;id=${chat.chatId}">${chat.chatName}</a>
-  <b>ID:</b> <code>${chat.chatId}</code>`;
-    bot.sendMessage(groupId, message, { parse_mode: "HTML" }).catch((error) => {
-        console.error(
-            `Erro ao enviar mensagem para o grupo ${groupId}: ${error}`
-        );
-    });
 });
 
 bot.on("polling_error", (error) => {
