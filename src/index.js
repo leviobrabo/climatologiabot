@@ -45,7 +45,7 @@ bot.on("inline_query", async (query) => {
         return;
     }
 
-    let units = "imperial";
+    let units = "metric";
     let lang = "en";
 
     switch (userLanguage) {
@@ -57,11 +57,9 @@ bot.on("inline_query", async (query) => {
         case "tr":
         case "uk":
         case "ru":
-            units = "metric";
             lang = userLanguage;
             break;
         default:
-            units = "imperial";
             lang = "en";
             break;
     }
