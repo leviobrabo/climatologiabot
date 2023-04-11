@@ -1,5 +1,5 @@
 {
-    "startMessage": "¡Hola, soy *Janna*! \n\n_Soy un bot que te envía los datos del pronóstico del tiempo para tu ciudad._ 😄!\n\n*📬Climatolgiabot - Canal oficial:* [Haz clic aquí](https://t.me/climatologiaofc)\n\n📦*Mi código fuente:* [GitHub](https://github.com/leviobrabo/climatologiabot)",
+    "startMessage": "¡Hola, soy *Janna*! \n\n_Soy un bot que te envía los datos del pronóstico del tiempo para tu ciudad._ 😄!\n\n*📬Climatolgiabot - Canal oficial:* [Haz clic aquí](https://t.me/climatologiaofc)\n\n📦*Mi código fuente:* [GitHub](https://github.com/leviobrabo/climatologiabot)\n\n*BTC:* `bc1qjxzlug0cwnfjrhacy9kkpdzxfj0mcxc079axtl`\n*ETH/USDT:* `0x1fbde0d2a96869299049f4f6f78fbd789d167d1b`",
     "addGroup": "✨ Agrégame a tu grupo",
     "owner": "👨‍💻 Soporte",
     "help_message": "¡Hola! Soy un *bot meteorológico.* \n\nPuedes usarme en línea, esto significa que no necesitas agregarme a los grupos, solo escribe mi nombre de usuario y el nombre de la ciudad. prueba y envía el pronóstico del tiempo en tu ciudad... \n\nPor ejemplo: `@climatologiabot Buenos Aires`\nUsa el bot para compartir el clima en tu ciudad.",
