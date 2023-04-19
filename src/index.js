@@ -862,7 +862,7 @@ bot.onText(/^(\/broadcast|\/bc)\b/, async (msg, match) => {
     );
 });
 
-bot.onText(/\/dev/, async (msg) => {
+bot.onText(/\/dev/, async (message) => {
     const userId = message.from.id;
     if (message.chat.type !== "private") {
         return;
