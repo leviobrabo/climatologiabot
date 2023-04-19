@@ -786,6 +786,18 @@ bot.on("polling_error", (error) => {
     console.error(`Erro no bot de polling: ${error}`);
 });
 
+function timeFormatter(seconds) {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+
+    const hoursFormatted = String(hours).padStart(2, "0");
+    const minutesFormatted = String(minutes).padStart(2, "0");
+    const secondsFormatted = String(secs).padStart(2, "0");
+
+    return `${hoursFormatted}:${minutesFormatted}:${secondsFormatted}`;
+}
+
 bot.onText(/\/ping/, async (msg) => {
     const start = new Date();
     const replied = await bot.sendMessage(msg.chat.id, "𝚙𝚘𝚗𝚐!");
