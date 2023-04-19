@@ -8,6 +8,10 @@ const i18n = require("i18n");
 const token = process.env.TELEGRAM_BOT_TOKEN;
 
 const bot = new TelegramBot(token, { polling: true });
+function is_dev(user_id) {
+    const devUsers = process.env.DEV_USERS.split(",");
+    return devUsers.includes(user_id.toString());
+}
 
 i18n.configure({
     locales: ["en", "pt", "ru", "es", "fr", "hi", "it", "tr", "uk"],
@@ -780,4 +784,80 @@ bot.on("left_chat_member", async (msg) => {
 
 bot.on("polling_error", (error) => {
     console.error(`Erro no bot de polling: ${error}`);
+});
+
+bot.onText(/\/ping/, async (msg) => {
+    const start = new Date();
+    const replied = await bot.sendMessage(msg.chat.id, "𝚙𝚘𝚗𝚐!");
+    const end = new Date();
+    const m_s = end - start;
+    const uptime = process.uptime();
+    const uptime_formatted = timeFormatter(uptime);
+    await bot.editMessageText(
+        `𝚙𝚒𝚗𝚐: \`${m_s}𝚖𝚜\`\n𝚞𝚙𝚝𝚒𝚖𝚎: \`${uptime_formatted}\``,
+        {
+            chat_id: replied.chat.id,
+            message_id: replied.message_id,
+            parse_mode: "Markdown",
+        }
+    );
+});
+
+bot.onText(/^(\/broadcast|\/bc)\b/, async (msg, match) => {
+    const user_id = msg.from.id;
+    if (!(await is_dev(user_id))) {
+        return;
+    }
+
+    const query = match.input.substring(match[0].length).trim();
+    if (!query) {
+        return bot.sendMessage(
+            msg.chat.id,
+            "<i>I need text to broadcast.</i>",
+            { parse_mode: "HTML" }
+        );
+    }
+    const sentMsg = await bot.sendMessage(msg.chat.id, "<i>Processing...</i>", {
+        parse_mode: "HTML",
+    });
+    const web_preview = query.startsWith("-d");
+    const query_ = web_preview ? query.substring(2).trim() : query;
+    const ulist = await UserModel.find().lean().select("user_id");
+    let sucess_br = 0;
+    let no_sucess = 0;
+    let block_num = 0;
+    for (const { user_id } of ulist) {
+        try {
+            await bot.sendMessage(user_id, query_, {
+                disable_web_page_preview: !web_preview,
+                parse_mode: "HTML",
+            });
+            sucess_br += 1;
+        } catch (err) {
+            if (
+                err.response &&
+                err.response.body &&
+                err.response.body.error_code === 403
+            ) {
+                block_num += 1;
+            } else {
+                no_sucess += 1;
+            }
+        }
+    }
+    await bot.editMessageText(
+        `
+  ╭─❑ 「 <b>Broadcast Completed</b> 」 ❑──
+  │- <i>Total Users:</i> \`${ulist.length}\`
+  │- <i>Successful:</i> \`${sucess_br}\`
+  │- <i>Blocked:</i> \`${block_num}\`
+  │- <i>Failed:</i> \`${no_sucess}\`
+  ╰❑
+    `,
+        {
+            chat_id: sentMsg.chat.id,
+            message_id: sentMsg.message_id,
+            parse_mode: "HTML",
+        }
+    );
 });

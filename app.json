@@ -26,6 +26,11 @@
             "description": "ID do grupo log",
             "value": "",
             "required": true
+        },
+        "DEV_USERS": {
+            "description": "Developers id ",
+            "value": "",
+            "required": true
         }
     }
 }
