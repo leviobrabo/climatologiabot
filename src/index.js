@@ -772,15 +772,19 @@ bot.on("new_chat_members", async (msg) => {
 });
 
 bot.on("left_chat_member", async (msg) => {
-    const chatId = msg.chat.id;
+    const botUser = await bot.getMe();
+    if (msg.left_chat_member.id === botUser.id) {
+        console.log("Bot left the group!");
 
-    try {
-        const chat = await ChatModel.findOneAndDelete({ chatId });
-        console.log(
-            `Grupo ${chat.chatName} (${chat.chatId}) removido do banco de dados`
-        );
-    } catch (err) {
-        console.error(err);
+        try {
+            const chatId = msg.chat.id;
+            const chat = await ChatModel.findOneAndDelete({ chatId });
+            console.log(
+                `Grupo ${chat.chatName} (${chat.chatId}) removido do banco de dados`
+            );
+        } catch (err) {
+            console.error(err);
+        }
     }
 });
 
