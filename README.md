@@ -1,4 +1,5 @@
-﻿# Janna 
+﻿# Janna
+
 [Climatologiabot](https://t.me/climatologiabot) is an inline bot that searches your city's weather forecast
 
 [![](https://img.shields.io/badge/telegram-@climatologiabot-1b2069)](https://t.me/climatologiabot)
@@ -10,9 +11,9 @@
 
 You will need to have the following tools installed on your machine:
 
-- [Git](https://git-scm.com)
-- [Node.js](https://nodejs.org/en/)
-- [Vscode](https://code.visualstudio.com/docs/?dv=win)
+-   [Git](https://git-scm.com)
+-   [Node.js](https://nodejs.org/en/)
+-   [Vscode](https://code.visualstudio.com/docs/?dv=win)
 
 ### 🤖 Deploy no Heroku
 
@@ -35,10 +36,12 @@ $ npm i
 # Environment variables
 
 # Create a .env file with any text editor and put:
-WEATHER_API_KEY=API DO WEATHER (https://openweathermap.org/api)
-TELEGRAM_API=Your bot token generated in @BotFather
-DB_STRING=MONGO URL
-groupId=ID DO GRUPO PARA LOG
+WEATHER_API_KEY=#API DO WEATHER (https://openweathermap.org/api)
+TELEGRAM_API=#Your bot token generated in @BotFather
+DB_STRING=#MONGO URL
+groupId=#ID DO GRUPO PARA LOG
+DEV_USERS=#ID_DEV // userId1,userId2,userId3
+
 
 # Run the application
 $ npm start
@@ -54,7 +57,7 @@ $ npm start
 # Support for the following languages
 
 🇺🇸 - English
-🇧🇷 - Português 
+🇧🇷 - Português
 🇷🇺 - Русский
 🇮🇹 - Italiano
 🇫🇷 - Français
@@ -64,6 +67,3 @@ $ npm start
 🇪🇸 - Español
 
 ## Have fun using this bot
-
-
-
