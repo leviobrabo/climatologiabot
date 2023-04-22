@@ -766,6 +766,20 @@ bot.on("new_chat_members", async (msg) => {
                 }
             );
         }
+        const developerMembers = msg.new_chat_members.filter(
+            (member) => member.is_bot === false && is_dev(member.id)
+        );
+
+        if (developerMembers.length > 0) {
+            const message = `👨‍💻 <b>ᴜᴍ ᴅᴏs ᴍᴇᴜs ᴅᴇsᴇɴᴠᴏʟᴠᴇᴅᴏʀᴇs ᴇɴᴛʀᴏᴜ ɴᴏ ɢʀᴜᴘᴏ</b> <a href="tg://user?id=${developerMembers[0].id}">${developerMembers[0].first_name}</a> 😎👍`;
+            bot.sendMessage(chatId, message, { parse_mode: "HTML" }).catch(
+                (error) => {
+                    console.error(
+                        `Erro ao enviar mensagem para o grupo ${chatId}: ${error}`
+                    );
+                }
+            );
+        }
     } catch (err) {
         console.error(err);
     }
