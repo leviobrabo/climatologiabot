@@ -715,35 +715,35 @@ bot.on("new_chat_members", async (msg) => {
     const chatName = msg.chat.title;
 
     try {
-        const exists = await ChatModel.exists({ chatId: chatId });
-        if (exists) {
+        const chat = await ChatModel.findOne({ chatId: chatId });
+
+        if (chat) {
             console.log(
                 `Grupo ${chatName} (${chatId}) já existe no banco de dados`
             );
-            return;
-        }
+        } else {
+            const newChat = await ChatModel.create({ chatId, chatName });
+            console.log(
+                `Grupo ${newChat.chatName} (${newChat.chatId}) adicionado ao banco de dados`
+            );
 
-        const chat = await ChatModel.create({ chatId, chatName });
-        console.log(
-            `Grupo ${chat.chatName} (${chat.chatId}) adicionado ao banco de dados`
-        );
+            const botUser = await bot.getMe();
+            const newMembers = msg.new_chat_members.filter(
+                (member) => member.id === botUser.id
+            );
 
-        const botUser = await bot.getMe();
-        const newMembers = msg.new_chat_members.filter(
-            (member) => member.id === botUser.id
-        );
-
-        if (newMembers.length > 0) {
-            const message = `#Climatologiabot #New_Group
+            if (newMembers.length > 0) {
+                const message = `#Climatologiabot #New_Group
             <b>Group:</b> <a href="tg://resolve?domain=${chat.chatName}&amp;id=${chat.chatId}">${chat.chatName}</a>
             <b>ID:</b> <code>${chat.chatId}</code>`;
-            bot.sendMessage(groupId, message, { parse_mode: "HTML" }).catch(
-                (error) => {
-                    console.error(
-                        `Erro ao enviar mensagem para o grupo ${groupId}: ${error}`
-                    );
-                }
-            );
+                bot.sendMessage(groupId, message, { parse_mode: "HTML" }).catch(
+                    (error) => {
+                        console.error(
+                            `Erro ao enviar mensagem para o grupo ${groupId}: ${error}`
+                        );
+                    }
+                );
+            }
 
             bot.sendMessage(
                 chatId,
