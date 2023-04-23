@@ -3,6 +3,7 @@ const axios = require("axios");
 require("dotenv").config();
 const { UserModel } = require("./database");
 const { ChatModel } = require("./database");
+const CronJob = require("cron").CronJob;
 const i18n = require("i18n");
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
