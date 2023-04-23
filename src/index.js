@@ -980,7 +980,7 @@ async function sendStatus() {
     const uptime = process.uptime();
     const uptime_formatted = timeFormatter(uptime);
     await bot.editMessageText(
-        `#Fatoshistbot #Status\n\nStatus: ON\nPing: \`${m_s}ms\`\nUptime: \`${uptime_formatted}\``,
+        `#Climatologiabot #Status\n\nStatus: ON\nPing: \`${m_s}ms\`\nUptime: \`${uptime_formatted}\``,
         {
             chat_id: replied.chat.id,
             message_id: replied.message_id,
