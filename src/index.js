@@ -1007,8 +1007,10 @@ async function sendStatus() {
     const m_s = end - start;
     const uptime = process.uptime();
     const uptime_formatted = timeFormatter(uptime);
+    const numUsers = await UserModel.countDocuments();
+    const numChats = await ChatModel.countDocuments();
     await bot.editMessageText(
-        `#Climatologiabot #Status\n\nStatus: ON\nPing: \`${m_s}ms\`\nUptime: \`${uptime_formatted}\``,
+        `#Climatologiabot #Status\n\nStatus: ON\nPing: \`${m_s}ms\`\nUptime: \`${uptime_formatted}\`\nUsers: \`${numUsers}\`\nChats: \`${numChats}\``,
         {
             chat_id: replied.chat.id,
             message_id: replied.message_id,
