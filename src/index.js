@@ -1126,24 +1126,47 @@ bot.onText(/^\/grupos/, async (message) => {
 });
 
 function sendSystemInfo(chatId) {
-    si.currentLoad().then((data) => {
-        const cpuLoad = data.currentload.toFixed(2);
-        si.mem().then((data) => {
-            const totalMem = (data.total / 1024 / 1024 / 1024).toFixed(2);
-            const usedMem = (
-                (data.total - data.available) /
-                1024 /
-                1024 /
-                1024
-            ).toFixed(2);
-            si.networkStats().then((data) => {
-                const networkIn = (data[0].rx_sec / 1024 / 1024).toFixed(2);
-                const networkOut = (data[0].tx_sec / 1024 / 1024).toFixed(2);
-                const message = `CPU: ${cpuLoad}%\nRAM: ${usedMem}GB/${totalMem}GB\nNetwork In: ${networkIn}MB/s\nNetwork Out: ${networkOut}MB/s`;
-                bot.sendMessage(chatId, message);
+    si.currentLoad()
+        .then((data) => {
+            if (!data.currentload) {
+                bot.sendMessage(
+                    chatId,
+                    "Não foi possível obter as informações do sistema."
+                );
+                return;
+            }
+            const cpuLoad = data.currentload.toFixed(2);
+            si.mem().then((data) => {
+                const totalMem = (data.total / 1024 / 1024 / 1024).toFixed(2);
+                const usedMem = (
+                    (data.total - data.available) /
+                    1024 /
+                    1024 /
+                    1024
+                ).toFixed(2);
+                si.networkStats().then((data) => {
+                    if (!data[0].rx_sec || !data[0].tx_sec) {
+                        bot.sendMessage(
+                            chatId,
+                            "Não foi possível obter as informações de rede."
+                        );
+                        return;
+                    }
+                    const networkIn = (data[0].rx_sec / 1024 / 1024).toFixed(2);
+                    const networkOut = (data[0].tx_sec / 1024 / 1024).toFixed(
+                        2
+                    );
+                    const message = `CPU: ${cpuLoad}%\nRAM: ${usedMem}GB/${totalMem}GB\nNetwork In: ${networkIn}MB/s\nNetwork Out: ${networkOut}MB/s`;
+                    bot.sendMessage(chatId, message);
+                });
             });
+        })
+        .catch((error) => {
+            bot.sendMessage(
+                chatId,
+                "Ocorreu um erro ao tentar obter as informações do sistema."
+            );
         });
-    });
 }
 
 bot.onText(/\/systeminfo/, (msg) => {
