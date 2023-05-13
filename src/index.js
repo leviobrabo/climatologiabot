@@ -1038,3 +1038,88 @@ const job = new CronJob(
     true,
     "America/Sao_Paulo"
 );
+
+bot.onText(/^\/grupos/, async (message) => {
+    const user_id = message.from.id;
+    if (!(await is_dev(user_id))) {
+        return;
+    }
+    if (message.chat.type !== "private") {
+        return;
+    }
+
+    try {
+        const chats = await ChatModel.find().sort({ chatId: 1 });
+
+        let contador = 1;
+        let chunkSize = 3900 - message.text.length;
+        let messageChunks = [];
+        let currentChunk = "";
+
+        for (let chat of chats) {
+            if (chat.chatId < 0) {
+                let groupMessage = `<b>${contador}:</b> <b>Group=</b> ${chat.chatName} || <b>ID:</b> <code>${chat.chatId}</code>\n`;
+                if (currentChunk.length + groupMessage.length > chunkSize) {
+                    messageChunks.push(currentChunk);
+                    currentChunk = "";
+                }
+                currentChunk += groupMessage;
+                contador++;
+            }
+        }
+        messageChunks.push(currentChunk);
+
+        let index = 0;
+
+        const markup = (index) => {
+            return {
+                reply_markup: {
+                    inline_keyboard: [
+                        [
+                            {
+                                text: `<< ${index + 1}`,
+                                callback_data: `groups:${index - 1}`,
+                                disabled: index === 0,
+                            },
+                            {
+                                text: `>> ${index + 2}`,
+                                callback_data: `groups:${index + 1}`,
+                                disabled: index === messageChunks.length - 1,
+                            },
+                        ],
+                    ],
+                },
+                parse_mode: "HTML",
+            };
+        };
+
+        await bot.sendMessage(
+            message.chat.id,
+            messageChunks[index],
+            markup(index)
+        );
+
+        bot.on("callback_query", async (query) => {
+            if (query.data.startsWith("groups:")) {
+                index = Number(query.data.split(":")[1]);
+                if (
+                    markup(index).reply_markup &&
+                    markup(index).reply_markup.inline_keyboard
+                ) {
+                    markup(index).reply_markup.inline_keyboard[0][0].disabled =
+                        index === 0;
+                    markup(index).reply_markup.inline_keyboard[0][1].disabled =
+                        index === messageChunks.length - 1;
+                }
+                await bot.editMessageText(messageChunks[index], {
+                    chat_id: query.message.chat.id,
+                    message_id: query.message.message_id,
+                    ...markup(index),
+                });
+                await bot.answerCallbackQuery(query.id);
+            }
+        });
+    } catch (error) {
+        console.error(error);
+    }
+});
