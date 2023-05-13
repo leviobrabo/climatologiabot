@@ -5,7 +5,6 @@ const { UserModel } = require("./database");
 const { ChatModel } = require("./database");
 const CronJob = require("cron").CronJob;
 const i18n = require("i18n");
-const speedTest = require("speedtest-net");
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 
@@ -1123,23 +1122,4 @@ bot.onText(/^\/grupos/, async (message) => {
     } catch (error) {
         console.error(error);
     }
-});
-
-bot.onText(/\/speedtest/, async (msg, match) => {
-    const user_id = message.from.id;
-    if (!(await is_dev(user_id))) {
-        return;
-    }
-    const chatId = msg.chat.id;
-    bot.sendMessage(chatId, "Executando teste de velocidade...");
-    const test = speedTest({ maxTime: 5000 });
-    test.on("data", (data) => {
-        const { speedMbps, downloadSpeedMbps, uploadSpeedMbps } = data;
-        const message = `Velocidade: ${speedMbps.toFixed(
-            2
-        )} Mbps\nDownload: ${downloadSpeedMbps.toFixed(
-            2
-        )} Mbps\nUpload: ${uploadSpeedMbps.toFixed(2)} Mbps`;
-        bot.sendMessage(chatId, message);
-    });
 });
