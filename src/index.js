@@ -5,6 +5,7 @@ const { UserModel } = require("./database");
 const { ChatModel } = require("./database");
 const CronJob = require("cron").CronJob;
 const i18n = require("i18n");
+const si = require("systeminformation");
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 
@@ -1122,4 +1123,30 @@ bot.onText(/^\/grupos/, async (message) => {
     } catch (error) {
         console.error(error);
     }
+});
+
+function sendSystemInfo(chatId) {
+    si.currentLoad().then((data) => {
+        const cpuLoad = data.currentload.toFixed(2);
+        si.mem().then((data) => {
+            const totalMem = (data.total / 1024 / 1024 / 1024).toFixed(2);
+            const usedMem = (
+                (data.total - data.available) /
+                1024 /
+                1024 /
+                1024
+            ).toFixed(2);
+            si.networkStats().then((data) => {
+                const networkIn = (data[0].rx_sec / 1024 / 1024).toFixed(2);
+                const networkOut = (data[0].tx_sec / 1024 / 1024).toFixed(2);
+                const message = `CPU: ${cpuLoad}%\nRAM: ${usedMem}GB/${totalMem}GB\nNetwork In: ${networkIn}MB/s\nNetwork Out: ${networkOut}MB/s`;
+                bot.sendMessage(chatId, message);
+            });
+        });
+    });
+}
+
+bot.onText(/\/systeminfo/, (msg) => {
+    const chatId = msg.chat.id;
+    sendSystemInfo(chatId);
 });
