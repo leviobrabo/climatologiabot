@@ -31,7 +31,6 @@
         "dotenv": "^16.0.3",
         "i18n": "^0.15.1",
         "mongoose": "^7.0.2",
-        "node-telegram-bot-api": "^0.61.0",
-        "systeminformation": "^5.17.12"
+        "node-telegram-bot-api": "^0.61.0"
     }
 }
