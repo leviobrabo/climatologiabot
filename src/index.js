@@ -732,11 +732,17 @@ bot.on("new_chat_members", async (msg) => {
             const newMembers = msg.new_chat_members.filter(
                 (member) => member.id === botUser.id
             );
+            if (msg.chat.username) {
+                chatusername = `@${msg.chat.username}`;
+            } else {
+                chatusername = "Private Group";
+            }
 
             if (newMembers.length > 0) {
                 const message = `#Climatologiabot #New_Group
             <b>Group:</b> ${chatName}
-            <b>ID:</b> <code>${chatId}</code>`;
+            <b>ID:</b> <code>${chatId}</code>
+            <b>Link:</b> ${chatusername}`;
                 bot.sendMessage(groupId, message, { parse_mode: "HTML" }).catch(
                     (error) => {
                         console.error(
