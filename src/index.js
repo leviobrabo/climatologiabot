@@ -844,24 +844,8 @@ bot.onText(/\/ping/, async (msg) => {
 
 bot.onText(/^(\/broadcast|\/bc)\b/, async (msg, match) => {
     const user_id = msg.from.id;
-    if (!is_dev(user_id)) {
+    if (!(await is_dev(user_id))) {
         return;
-    }
-
-    try {
-        const sentMsg = await bot.sendMessage(
-            msg.chat.id,
-            "<i>Processing...</i>",
-            {
-                parse_mode: "HTML",
-            }
-        );
-    } catch (err) {
-        return bot.sendMessage(
-            msg.chat.id,
-            "<i>An error occurred while processing the broadcast. Please try again later.</i>",
-            { parse_mode: "HTML" }
-        );
     }
 
     const query = match.input.substring(match[0].length).trim();
@@ -872,24 +856,15 @@ bot.onText(/^(\/broadcast|\/bc)\b/, async (msg, match) => {
             { parse_mode: "HTML" }
         );
     }
-
+    const sentMsg = await bot.sendMessage(msg.chat.id, "<i>Processing...</i>", {
+        parse_mode: "HTML",
+    });
     const web_preview = query.startsWith("-d");
     const query_ = web_preview ? query.substring(2).trim() : query;
-
-    try {
-        const ulist = await UserModel.find().lean().select("user_id");
-    } catch (err) {
-        return bot.sendMessage(
-            msg.chat.id,
-            "<i>An error occurred while fetching the user list. Please try again later.</i>",
-            { parse_mode: "HTML" }
-        );
-    }
-
-    const sucess_br = 0;
-    const no_sucess = 0;
-    const block_num = 0;
-
+    const ulist = await UserModel.find().lean().select("user_id");
+    let sucess_br = 0;
+    let no_sucess = 0;
+    let block_num = 0;
     for (const { user_id } of ulist) {
         try {
             await bot.sendMessage(user_id, query_, {
@@ -897,7 +872,6 @@ bot.onText(/^(\/broadcast|\/bc)\b/, async (msg, match) => {
                 parse_mode: "HTML",
             });
             sucess_br += 1;
-            await new Promise((resolve) => setTimeout(resolve, 1000)); // wait 1 second between messages
         } catch (err) {
             if (
                 err.response &&
@@ -910,16 +884,15 @@ bot.onText(/^(\/broadcast|\/bc)\b/, async (msg, match) => {
             }
         }
     }
-
     await bot.editMessageText(
         `
-        ╭─❑ 「 <b>Broadcast Completed</b> 」 ❑──
-        │- <i>Total Users:</i> \`${ulist.length}\`
-        │- <i>Successful:</i> \`${sucess_br}\`
-        │- <i>Blocked:</i> \`${block_num}\`
-        │- <i>Failed:</i> \`${no_sucess}\`
-        ╰❑
-      `,
+  ╭─❑ 「 <b>Broadcast Completed</b> 」 ❑──
+  │- <i>Total Users:</i> \`${ulist.length}\`
+  │- <i>Successful:</i> \`${sucess_br}\`
+  │- <i>Blocked:</i> \`${block_num}\`
+  │- <i>Failed:</i> \`${no_sucess}\`
+  ╰❑
+    `,
         {
             chat_id: sentMsg.chat.id,
             message_id: sentMsg.message_id,
