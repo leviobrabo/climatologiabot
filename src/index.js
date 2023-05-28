@@ -847,6 +847,9 @@ bot.onText(/^(\/broadcast|\/bc)\b/, async (msg, match) => {
     if (!(await is_dev(user_id))) {
         return;
     }
+    if (msg.chat.type !== "private") {
+        return;
+    }
 
     const query = match.input.substring(match[0].length).trim();
     if (!query) {
@@ -940,6 +943,7 @@ bot.onText(/\/dev/, async (message) => {
                 "/stats - Estatística de grupos, usuarios e mensagens enviadas",
                 "/broadcast ou /bc - envia mensagem para todos usuários",
                 "/ping - veja a latência da VPS",
+                "/sendgp - encaminha msg para grupos",
             ];
             await bot.editMessageText(
                 "<b>Lista de Comandos:</b> \n\n" + commands.join("\n"),
