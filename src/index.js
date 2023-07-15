@@ -76,7 +76,7 @@ bot.on("inline_query", async (query) => {
             `${weatherBaseUrl}?q=${cityName}&appid=${process.env.WEATHER_API_KEY}&units=${units}&lang=${lang}`
         );
 
-        const weatherData = response.data.current;
+        const weatherData = response.data;
         const temperature = Math.round(weatherData.main.temp);
         const weatherDescription = weatherData.weather[0].description;
         const weatherIconCode = weatherData.weather[0].icon;
