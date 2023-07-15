@@ -23,6 +23,18 @@ i18n.configure({
     indent: "  ",
 });
 
+const languageToTimezone = {
+    en: "America/New_York",
+    pt: "America/Sao_Paulo",
+    ru: "Europe/Moscow",
+    es: "Europe/Madrid",
+    fr: "Europe/Paris",
+    hi: "Asia/Kolkata",
+    it: "Europe/Rome",
+    tr: "Europe/Istanbul",
+    uk: "Europe/Kiev"
+};
+
 const weatherBaseUrl = "https://api.openweathermap.org/data/2.5/weather";
 
 async function getUserLanguage(userId) {
@@ -43,6 +55,8 @@ bot.on("inline_query", async (query) => {
     const userId = query.from.id;
     const userLanguage = await getUserLanguage(userId);
     const cityName = query.query;
+    const timezone = languageToTimezone[userLanguage] || "America/New_York";
+
 
     if (!cityName) {
         await bot.answerInlineQuery(query.id, [], {
@@ -74,7 +88,7 @@ bot.on("inline_query", async (query) => {
         const emoji = getTemperatureEmoji(temperature);
         const countryCode = weatherData.sys.country || "";
         const agora = new Date();
-        const opcoes = { timeZone: "America/Sao_Paulo" };
+        const opcoes = { timeZone: timezone };
         const horarioFormatado = agora.toLocaleTimeString("pt-BR", opcoes);
 
         const weatherIconUrl = `http://openweathermap.org/img/wn/${weatherIconCode}.png`;
