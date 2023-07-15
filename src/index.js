@@ -76,13 +76,13 @@ bot.on("inline_query", async (query) => {
             `${weatherBaseUrl}?q=${cityName}&appid=${process.env.WEATHER_API_KEY}&units=${units}&lang=${lang}`
         );
 
-        const weatherData = response.data;
-        const temperature = Math.round(weatherData.main.temp);
+        const weatherData = response.data.current;
+        const temperature = Math.round(weatherData.temp);
         const weatherDescription = weatherData.weather[0].description;
         const weatherIconCode = weatherData.weather[0].icon;
-        const feelsLike = Math.round(weatherData.main.feels_like);
+        const feelsLike = Math.round(weatherData.feels_like);
         const windSpeed = Math.round(weatherData.wind.speed);
-        const humidity = weatherData.main.humidity;
+        const humidity = weatherData.humidity;
         const emoji = getTemperatureEmoji(temperature);
         const countryCode = weatherData.sys.country || "";
         const agora = new Date();
@@ -90,6 +90,19 @@ bot.on("inline_query", async (query) => {
         const horarioFormatado = agora.toLocaleTimeString("pt-BR", opcoes);
 
         const weatherIconUrl = `http://openweathermap.org/img/wn/${weatherIconCode}.png`;
+
+
+        const alerts = response.data.alerts || null;
+        let alertMessage = "";
+
+        if (alerts) {
+            const alert = alerts[0];
+            const event = alert.event || "";
+            const description = alert.description || "";
+            const tags = alert.tags || "";
+
+            alertMessage = i18n.__("alert_message", { event, description, tags });
+        }
 
         const message = i18n.__("weather_forecast_message", {
             emoji,
@@ -100,6 +113,7 @@ bot.on("inline_query", async (query) => {
             humidity,
             countryCode,
             horarioFormatado,
+            alerts: alertMessage,
         });
         const message1 = i18n.__("city_weather_forecast_message", {
             cityName: cityName.toUpperCase(),
@@ -111,6 +125,7 @@ bot.on("inline_query", async (query) => {
             humidity,
             countryCode,
             horarioFormatado,
+            alerts: alertMessage,
         });
         const title_message_visible = i18n.__("title_message_visible");
         const description_visible = i18n.__("description_visible", {

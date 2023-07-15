@@ -24,5 +24,6 @@
     "help": "❓ Ajuda",
     "pv_message_lang": "⚙️ Clique no botão abaixo para alterar o idioma em um chat privado.",
     "pv_message_lang_button": "🇧🇷 Alterar idioma",
-    "git_to_use": "Como usar este bot"
+    "git_to_use": "Como usar este bot",
+    "alert_message": "ALERTA: {{event}} - {{description}} (Tags: {{tags}})"
 }
