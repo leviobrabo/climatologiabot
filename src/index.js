@@ -46,7 +46,7 @@ bot.on("inline_query", async (query) => {
 
     if (!cityName) {
         await bot.answerInlineQuery(query.id, [], {
-            switch_pm_text: i18n.__("how_to_use"),
+            switch_pm_text: i18n.__({ phrase: "how_to_use", locale: userLanguage }),
             switch_pm_parameter: "how_to_use",
             cache_time: 0,
         });
