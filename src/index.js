@@ -93,17 +93,21 @@ bot.on("inline_query", async (query) => {
 
         const weatherIconUrl = `http://openweathermap.org/img/wn/${weatherIconCode}.png`;
 
+        const firstAlert = weatherData.alerts ? weatherData.alerts[0] : null;
 
-        const alerts = response.data.alerts || null;
-        let alertMessage = "";
+        let alertMessage;
+        if (firstAlert) {
+            const alertEvent = firstAlert.event;
+            const alertDescription = firstAlert.description;
+            const alertTags = firstAlert.tags.join(", ");
 
-        if (alerts) {
-            const alert = alerts[0];
-            const event = alert.event || "";
-            const description = alert.description || "";
-            const tags = alert.tags || "";
-
-            alertMessage = i18n.__("alert_message", { event, description, tags });
+            alertMessage = i18n.__("alert_message", {
+                alertEvent,
+                alertDescription,
+                alertTags,
+            });
+        } else {
+            alertMessage = i18n.__("no_alert_message");
         }
 
         const message = i18n.__("weather_forecast_message", {
@@ -115,7 +119,7 @@ bot.on("inline_query", async (query) => {
             humidity,
             countryCode,
             horarioFormatado,
-            alerts: alertMessage,
+            alertMessage,
         });
         const message1 = i18n.__("city_weather_forecast_message", {
             cityName: cityName.toUpperCase(),
@@ -127,7 +131,7 @@ bot.on("inline_query", async (query) => {
             humidity,
             countryCode,
             horarioFormatado,
-            alerts: alertMessage,
+            alertMessage,
         });
         const title_message_visible = i18n.__("title_message_visible");
         const description_visible = i18n.__("description_visible", {

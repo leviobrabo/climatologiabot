@@ -16,6 +16,8 @@
     "description_hidden": "Vedi meteo per {{cityName}} - {{countryCode}} \nNota: NOME CITTÀ NASCOSTO",
     "title_message_visible": "Previsioni meteo per la tua città🌤️",
     "description_visible": "Vedi meteo per {{cityName}} - {{countryCode}} \nNota: VISIBLE CITY NAME",
+    "alert_message": "🚨 Allarme: {{alertEvent}}\n\nDescrizione: {{alertDescription}}\n{{alertTags}}",
+    "no_alert_message": "Nessun allarme per la tua città.",
     "erro_message": "Impossibile ottenere le previsioni del tempo. Riprova più tardi.",
     "title_error": "Oops! Si è verificato un errore",
     "description_error": "Impossibile ottenere le previsioni del tempo.",
@@ -24,6 +26,5 @@
     "help": "❓ Aiuto",
     "pv_message_lang": "⚙️ Fai clic sul pulsante in basso per cambiare la lingua in una chat privata.",
     "pv_message_lang_button": "🇮🇹 Cambia lingua",
-    "git_to_use": "Come usare questo bot",
-    "alert_message": "ALLARME: {{event}} - {{description}} (Tag: {{tags}})"
+    "git_to_use": "Come usare questo bot"
 }

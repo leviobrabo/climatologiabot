@@ -16,6 +16,8 @@
     "description_hidden": "Veja o clima de {{cityName}} - {{countryCode}} \nObs.: NOME DA CIDADE OCULTADA",
     "title_message_visible": "Previsão do tempo para sua cidade🌤️",
     "description_visible": "Veja o clima de {{cityName}} - {{countryCode}} \nObs.: NOME DA CIDADE VÍSIVEL",
+    "alert_message": "🚨 Alerta: {{alertEvent}}\n\nDescrição: {{alertDescription}}\n{{alertTags}}",
+    "no_alert_message": "Não há alertas para a sua cidade.",
     "erro_message": "Não foi possível obter a previsão do tempo. Por favor, tente novamente mais tarde.",
     "title_error": "Ops! Ocorreu um erro",
     "description_error": "Não foi possível obter a previsão do tempo.",
@@ -24,6 +26,5 @@
     "help": "❓ Ajuda",
     "pv_message_lang": "⚙️ Clique no botão abaixo para alterar o idioma em um chat privado.",
     "pv_message_lang_button": "🇧🇷 Alterar idioma",
-    "git_to_use": "Como usar este bot",
-    "alert_message": "ALERTA: {{event}} - {{description}} (Tags: {{tags}})"
+    "git_to_use": "Como usar este bot"
 }

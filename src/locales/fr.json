@@ -16,6 +16,8 @@
     "description_hidden": "Voir la météo pour {{cityName}} - {{countryCode}} \nRemarque: CITY NAME HIDDEN",
     "title_message_visible": "Prévisions météo pour votre ville🌤️",
     "description_visible": "Voir la météo pour {{cityName}} - {{countryCode}} \nRemarque: VISIBLE CITY NAME",
+    "alert_message": "🚨 Alerte : {{alertEvent}}\n\nDescription : {{alertDescription}}\n{{alertTags}}",
+    "no_alert_message": "Aucune alerte pour votre ville.",
     "erro_message": "Impossible d'obtenir les prévisions météo. Veuillez réessayer plus tard.",
     "title_error": "Oups! Une erreur s'est produite",
     "description_error": "Impossible d'obtenir les prévisions météo.",
@@ -24,6 +26,5 @@
     "help": "❓ Aide",
     "pv_message_lang": "⚙️ Veuillez cliquer sur le bouton ci-dessous pour changer la langue dans un chat privé.",
     "pv_message_lang_button": "🇫🇷 Changer de langue",
-    "git_to_use": "Comment utiliser ce bot",
-    "alert_message": "ALERTE : {{event}} - {{description}} (Tags : {{tags}})"
+    "git_to_use": "Comment utiliser ce bot"
 }

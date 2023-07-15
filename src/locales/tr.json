@@ -15,6 +15,8 @@
     "description_hidden": "{{cityName}} - {{countryCode}} için hava durumunu görün \nNot: CITY NAME HIDDEN",
     "title_message_visible": "Şehriniz için hava tahmini🌤️",
     "description_visible": "{{cityName}} - {{countryCode}} için hava durumunu görün \nNot: GÖRÜNÜR ŞEHİR ADI",
+    "alert_message": "🚨 Uyarı: {{alertEvent}}\n\nAçıklama: {{alertDescription}}\n{{alertTags}}",
+    "no_alert_message": "Şehriniz için uyarı yok.",
     "erro_message": "Hava tahmini alınamadı. Lütfen daha sonra tekrar deneyin.",
     "title_error": "Hata! Bir hata oluştu",
     "description_error": "Hava tahmini alınamadı.",
@@ -23,6 +25,5 @@
     "help": "❓ Yardım",
     "pv_message_lang": "⚙️ Özel sohbette dili değiştirmek için lütfen aşağıdaki butona tıklayın.",
     "pv_message_lang_button": "🇹🇷 Dili değiştir",
-    "git_to_use": "Bu bot nasıl kullanılır",
-    "alert_message": "UYARI: {{event}} - {{description}} (Etiketler: {{tags}})"
+    "git_to_use": "Bu bot nasıl kullanılır"
 }
