@@ -70,7 +70,7 @@ bot.on("inline_query", async (query) => {
         const weatherIconCode = weatherData.weather[0].icon;
         const feelsLike = Math.round(weatherData.main.feels_like);
         const windSpeed = Math.round(weatherData.wind.speed);
-        const humidity = weatherData.humidity;
+        const humidity = weatherData.main.humidity;
         const emoji = getTemperatureEmoji(temperature);
         const countryCode = weatherData.sys.country || "";
         const agora = new Date();
@@ -95,7 +95,7 @@ bot.on("inline_query", async (query) => {
         const message = i18n.__("weather_forecast_message", {
             emoji,
             temperature,
-            weatherDescription,
+            weatherDescription: weatherDescription.charAt(0).toUpperCase() + weatherDescription.slice(1).toLowerCase(),
             feelsLike,
             windSpeed,
             humidity,
@@ -107,7 +107,7 @@ bot.on("inline_query", async (query) => {
             cityName: cityName.toUpperCase(),
             emoji,
             temperature,
-            weatherDescription,
+            weatherDescription: weatherDescription.charAt(0).toUpperCase() + weatherDescription.slice(1).toLowerCase(),
             feelsLike,
             windSpeed,
             humidity,
