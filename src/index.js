@@ -77,10 +77,10 @@ bot.on("inline_query", async (query) => {
         );
 
         const weatherData = response.data.current;
-        const temperature = Math.round(weatherData.temp);
+        const temperature = Math.round(weatherData.main.temp);
         const weatherDescription = weatherData.weather[0].description;
         const weatherIconCode = weatherData.weather[0].icon;
-        const feelsLike = Math.round(weatherData.feels_like);
+        const feelsLike = Math.round(weatherData.main.feels_like);
         const windSpeed = Math.round(weatherData.wind.speed);
         const humidity = weatherData.humidity;
         const emoji = getTemperatureEmoji(temperature);
