@@ -26,13 +26,17 @@ i18n.configure({
 const weatherBaseUrl = "https://api.openweathermap.org/data/2.5/weather";
 
 async function getUserLanguage(userId) {
-    const user = await UserModel.findOne({ userID: userId });
-
-    if (!user) {
+    try {
+        const user = await UserModel.findOne({ userID: userId });
+        if (user) {
+            return user.lang;
+        } else {
+            return i18n.defaultLocale;
+        }
+    } catch (error) {
+        console.error("Error fetching user language:", error);
         return i18n.defaultLocale;
     }
-
-    return user.lang;
 }
 
 bot.on("inline_query", async (query) => {
@@ -51,23 +55,7 @@ bot.on("inline_query", async (query) => {
     }
 
     let units = "metric";
-    let lang = "en";
-
-    switch (userLanguage) {
-        case "pt":
-        case "es":
-        case "fr":
-        case "hi":
-        case "it":
-        case "tr":
-        case "uk":
-        case "ru":
-            lang = userLanguage;
-            break;
-        default:
-            lang = "en";
-            break;
-    }
+    let lang = userLanguage;
 
     i18n.setLocale(lang);
 
