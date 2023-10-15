@@ -35,6 +35,9 @@ const languageToTimezone = {
     uk: "Europe/Kiev"
 };
 
+i18n.setLocale(languageCode)
+
+
 bot.setMyShortDescription(
     { short_description: "I'm an inline bot that sends you the weather forecast for your city. \n\nOfficial Channel: @climatologiaofc", language_code: "en" },
     { short_description: "Eu sou um bot inline que envia a previsão do tempo para a sua cidade. \n\nCanal Oficial: @climatologiaofc", language_code: "pt" },
