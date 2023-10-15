@@ -35,7 +35,7 @@ const languageToTimezone = {
     uk: "Europe/Kiev"
 };
 
-const languageCode = "en"; 
+const languageCode = "pt";
 
 i18n.setLocale(languageCode)
 
