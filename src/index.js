@@ -35,9 +35,9 @@ const languageToTimezone = {
     uk: "Europe/Kiev"
 };
 
-const languageCode = "pt";
+const userLanguage = i18n.getLocaleFromQuery({ lang: "en" });
 
-i18n.setLocale(languageCode)
+i18n.setLocale(userLanguage);
 
 
 bot.setMyShortDescription(
