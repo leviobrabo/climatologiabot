@@ -35,9 +35,9 @@ const languageToTimezone = {
     uk: "Europe/Kiev"
 };
 
-const languageCode = "ru"; // Default to English
+const language_code = "en";
 
-i18n.setLocale(languageCode);
+i18n.setLocale(language_code);
 
 
 bot.setMyShortDescription(
@@ -49,8 +49,8 @@ bot.setMyShortDescription(
     { short_description: "मैं एक इनलाइन बॉट हूं जो आपके शहर के लिए मौसम का पूर्वानुमान भेजता है। \n\nआधिकृत चैनल: @climatologiaofc", language_code: "hi" },
     { short_description: "Sono un bot inline che invia le previsioni del tempo per la tua città. \n\nCanale ufficiale: @climatologiaofc", language_code: "it" },
     { short_description: "Şehriniz için hava tahminini size gönderen bir iç içe botum. \n\nResmi Kanal: @climatologiaofc", language_code: "tr" },
-    { short_description: "Я - бот, який надсилає вам прогноз погоди для вашого міста. \n\nОфіційний канал: @climatologiaofc", language_code: "uk" },
-)
+    { short_description: "Я - бот, який надсилає вам прогноз погоди для вашого міста. \n\nОфіційний канал: @climatologiaofc", language_code: "uk" }
+);
 
 bot.setMyDescription(
     { description: "This Bot gives you weather information such as: weather, temperature, thermal sensation and humidity level in your city in real time.🌤 Official Channel: @climatologiaofc", language_code: "en" },
