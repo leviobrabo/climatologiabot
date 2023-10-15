@@ -35,6 +35,112 @@ const languageToTimezone = {
     uk: "Europe/Kiev"
 };
 
+bot.setMyShortDescription(
+    { short_description: "I'm an inline bot that sends you the weather forecast for your city. \n\nOfficial Channel: @climatologiaofc", language_code: "en" },
+    { short_description: "Eu sou um bot inline que envia a previsão do tempo para a sua cidade. \n\nCanal Oficial: @climatologiaofc", language_code: "pt" },
+    { short_description: "Я - инлайн-бот, отправляющий вам прогноз погоды для вашего города. \n\nОфициальный канал: @climatologiaofc", language_code: "ru" },
+    { short_description: "Soy un bot en línea que te envía el pronóstico del tiempo para tu ciudad. \n\nCanal oficial: @climatologiaofc", language_code: "es" },
+    { short_description: "Je suis un bot en ligne qui vous envoie la prévision météorologique pour votre ville. \n\nChaîne officielle : @climatologiaofc", language_code: "fr" },
+    { short_description: "मैं एक इनलाइन बॉट हूं जो आपके शहर के लिए मौसम का पूर्वानुमान भेजता है। \n\nआधिकृत चैनल: @climatologiaofc", language_code: "hi" },
+    { short_description: "Sono un bot inline che invia le previsioni del tempo per la tua città. \n\nCanale ufficiale: @climatologiaofc", language_code: "it" },
+    { short_description: "Şehriniz için hava tahminini size gönderen bir iç içe botum. \n\nResmi Kanal: @climatologiaofc", language_code: "tr" },
+    { short_description: "Я - бот, який надсилає вам прогноз погоди для вашого міста. \n\nОфіційний канал: @climatologiaofc", language_code: "uk" },
+)
+
+bot.setMyDescription(
+    { description: "This Bot gives you weather information such as: weather, temperature, thermal sensation and humidity level in your city in real time.🌤 Official Channel: @climatologiaofc", language_code: "en" },
+    { description: "Este Bot fornece informações meteorológicas, como: clima, temperatura, sensação térmica e nível de umidade em sua cidade em tempo real.🌤 Canal Oficial: @climatologiaofc", language_code: "pt" },
+    { description: "Этот бот предоставляет вам информацию о погоде, такую как: погода, температура, ощущение тепла и уровень влажности в вашем городе в реальном времени.🌤 Официальный канал: @climatologiaofc", language_code: "ru" },
+    { description: "Este Bot te brinda información del clima, como: el clima, la temperatura, la sensación térmica y el nivel de humedad en tu ciudad en tiempo real.🌤 Canal Oficial: @climatologiaofc", language_code: "es" },
+    { description: "Ce Bot vous fournit des informations météorologiques telles que: le temps, la température, la sensation thermique et le niveau d'humidité dans votre ville en temps réel.🌤 Chaîne officielle: @climatologiaofc", language_code: "fr" },
+    { description: "यह बॉट आपको आपके शहर में मौसम, तापमान, तापमान अनुभव और आपके शहर में ह्यूमिडिटी स्तर जैसी मौसम जानकारी देता है।🌤 आधिकृत चैनल: @climatologiaofc", language_code: "hi" },
+    { description: "Questo Bot ti fornisce informazioni meteorologiche come: meteo, temperatura, sensazione termica e livello di umidità nella tua città in tempo reale.🌤 Canale ufficiale: @climatologiaofc", language_code: "it" },
+    { description: "Bu Bot size gerçek zamanlı olarak şehrinizde hava durumu, sıcaklık, termal hissiyat ve nem seviyesi gibi hava durumu bilgilerini sunar.🌤 Resmi Kanal: @climatologiaofc", language_code: "tr" },
+    { description: "Цей бот надсилає вам інформацію про погоду, таку як: погода, температура, теплова сенсація та рівень вологості в вашому місті в реальному часі.🌤 Офіційний канал: @climatologiaofc", language_code: "uk" }
+);
+
+const botCommands = [
+    { command: "start", description: {} },
+    { command: "help", description: {} },
+];
+
+const languageCommands = [
+    {
+        commands: botCommands,
+        language_code: "en",
+        description: {
+            start: "Start the bot and get weather information.",
+            help: "Get help and usage instructions."
+        }
+    },
+    {
+        commands: botCommands,
+        language_code: "pt",
+        description: {
+            start: "Iniciar o bot e obter informações meteorológicas.",
+            help: "Obter ajuda e instruções de uso."
+        }
+    },
+    {
+        commands: botCommands,
+        language_code: "ru",
+        description: {
+            start: "Запустить бота и получить информацию о погоде.",
+            help: "Получить помощь и инструкции по использованию."
+        }
+    },
+    {
+        commands: botCommands,
+        language_code: "es",
+        description: {
+            start: "Iniciar el bot y obtener información meteorológica.",
+            help: "Obtener ayuda e instrucciones de uso."
+        }
+    },
+    {
+        commands: botCommands,
+        language_code: "fr",
+        description: {
+            start: "Démarrer le bot et obtenir des informations météorologiques.",
+            help: "Obtenir de l'aide et des instructions d'utilisation."
+        }
+    },
+    {
+        commands: botCommands,
+        language_code: "hi",
+        description: {
+            start: "बॉट को चालने और मौसम की जानकारी प्राप्त करने के लिए इस्तेमाल करें।",
+            help: "मदद और उपयोग निर्देशिका प्राप्त करें।"
+        }
+    },
+    {
+        commands: botCommands,
+        language_code: "it",
+        description: {
+            start: "Avvia il bot e ottieni informazioni meteorologiche.",
+            help: "Ottieni aiuto e istruzioni sull'uso."
+        }
+    },
+    {
+        commands: botCommands,
+        language_code: "tr",
+        description: {
+            start: "Bot'u başlatın ve hava bilgisi alın.",
+            help: "Yardım ve kullanım talimatları alın."
+        }
+    },
+    {
+        commands: botCommands,
+        language_code: "uk",
+        description: {
+            start: "Запустіть бота і отримайте інформацію про погоду.",
+            help: "Отримайте довідку та інструкції щодо використання."
+        }
+    },
+];
+
+bot.setMyCommands(languageCommands);
+
 const weatherBaseUrl = "https://api.openweathermap.org/data/2.5/weather";
 
 async function getUserLanguage(userId) {
@@ -54,6 +160,9 @@ async function getUserLanguage(userId) {
 bot.on("inline_query", async (query) => {
     const userId = query.from.id;
     const userLanguage = await getUserLanguage(userId);
+    if (!userLanguage) {
+        userLanguage = "en";
+    }
     const cityName = query.query;
     const timezone = languageToTimezone[userLanguage] || "America/New_York";
 
@@ -1147,7 +1256,6 @@ bot.onText(/\/sendgp/, async (msg, match) => {
     let no_success = 0;
     let block_num = 0;
 
-    // Check if the message is a reply and forward it instead of sending a new message
     if (msg.reply_to_message) {
         const replyMsg = msg.reply_to_message;
         for (const { chatId } of ulist) {
