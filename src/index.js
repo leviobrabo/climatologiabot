@@ -59,31 +59,30 @@ bot.setMyDescription(
     { description: "Цей бот надсилає вам інформацію про погоду, таку як: погода, температура, теплова сенсація та рівень вологості в вашому місті в реальному часі.🌤 Офіційний канал: @climatologiaofc", language_code: "uk" }
 );
 
-const commands = [
-    { command: "start", description: "Menu inicial", language_code: "pt" },
-    { command: "help", description: "Como usar o bot", language_code: "pt" },
-    { command: "start", description: "Main menu", language_code: "en" },
-    { command: "help", description: "How to use the bot", language_code: "en" },
-    { command: "start", description: "Главное меню", language_code: "ru" },
-    { command: "help", description: "Как использовать бота", language_code: "ru" },
-    { command: "start", description: "Menú principal", language_code: "es" },
-    { command: "help", description: "Cómo usar el bot", language_code: "es" },
-    { command: "start", description: "Menu principal", language_code: "fr" },
-    { command: "help", description: "Comment utiliser le bot", language_code: "fr" },
-    { command: "start", description: "मुख्य मेनू", language_code: "hi" },
-    { command: "help", description: "बॉट कैसे उपयोग करें", language_code: "hi" },
-    { command: "start", description: "Menu principale", language_code: "it" },
-    { command: "help", description: "Come usare il bot", language_code: "it" },
-    { command: "start", description: "Ana menü", language_code: "tr" },
-    { command: "help", description: "Botu nasıl kullanılır", language_code: "tr" },
-    { command: "start", description: "Головне меню", language_code: "uk" },
-    { command: "help", description: "Як користуватися ботом", language_code: "uk" },
-];
+function setMyCommandsSuite() {
+    const commands = [
+        { command: "start", description: "Menu inicial", language_code: "pt" },
+        { command: "help", description: "Como usar o bot", language_code: "pt" },
+        { command: "start", description: "Main menu", language_code: "en" },
+        { command: "help", description: "How to use the bot", language_code: "en" },
+        { command: "start", description: "Главное меню", language_code: "ru" },
+        { command: "help", description: "Как использовать бота", language_code: "ru" },
+        { command: "start", description: "Menú principal", language_code: "es" },
+        { command: "help", description: "Cómo usar el bot", language_code: "es" },
+        { command: "start", description: "Menu principal", language_code: "fr" },
+        { command: "help", description: "Comment utiliser le bot", language_code: "fr" },
+        { command: "start", description: "मुख्य मेनू", language_code: "hi" },
+        { command: "help", description: "बॉट कैसे उपयोग करें", language_code: "hi" },
+        { command: "start", description: "Menu principale", language_code: "it" },
+        { command: "help", description: "Come usare il bot", language_code: "it" },
+        { command: "start", description: "Ana menü", language_code: "tr" },
+        { command: "help", description: "Botu nasıl kullanılır", language_code: "tr" },
+        { command: "start", description: "Головное меню", language_code: "uk" },
+        { command: "help", description: "Як користуватися ботом", language_code: "uk" },
+    ];
 
-return bot.setMyCommands(commands).then(resp => {
-    assert.ok(is.boolean(resp));
-});
-
+    return bot.setMyCommands(commands);
+}
 
 
 const weatherBaseUrl = "https://api.openweathermap.org/data/2.5/weather";
