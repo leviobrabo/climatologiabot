@@ -103,10 +103,7 @@ async function getUserLanguage(userId) {
 
 bot.on("inline_query", async (query) => {
     const userId = query.from.id;
-    const userLanguage = await getUserLanguage(userId);
-    if (!userLanguage) {
-        userLanguage = "en";
-    }
+    userLanguage = await getUserLanguage(userId) || "en";
     const cityName = query.query;
     const timezone = languageToTimezone[userLanguage] || "America/New_York";
 
