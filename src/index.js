@@ -47,7 +47,7 @@ bot.setMyShortDescription(
     { short_description: "Я - бот, який надсилає вам прогноз погоди для вашого міста. \n\nОфіційний канал: @climatologiaofc", language_code: "uk" }
 );
 
-bot.setMyDescription(
+const descriptions = [
     { description: "This Bot gives you weather information such as: weather, temperature, thermal sensation and humidity level in your city in real time.🌤 Official Channel: @climatologiaofc", language_code: "en" },
     { description: "Este Bot fornece informações meteorológicas, como: clima, temperatura, sensação térmica e nível de umidade em sua cidade em tempo real.🌤 Canal Oficial: @climatologiaofc", language_code: "pt" },
     { description: "Этот бот предоставляет вам информацию о погоде, такую как: погода, температура, ощущение тепла и уровень влажности в вашем городе в реальном времени.🌤 Официальный канал: @climatologiaofc", language_code: "ru" },
@@ -57,8 +57,13 @@ bot.setMyDescription(
     { description: "Questo Bot ti fornisce informazioni meteorologiche come: meteo, temperatura, sensazione termica e livello di umidità nella tua città in tempo reale.🌤 Canale ufficiale: @climatologiaofc", language_code: "it" },
     { description: "Bu Bot size gerçek zamanlı olarak şehrinizde hava durumu, sıcaklık, termal hissiyat ve nem seviyesi gibi hava durumu bilgilerini sunar.🌤 Resmi Kanal: @climatologiaofc", language_code: "tr" },
     { description: "Цей бот надсилає вам інформацію про погоду, таку як: погода, температура, теплова сенсація та рівень вологості в вашому місті в реальному часі.🌤 Офіційний канал: @climatologiaofc", language_code: "uk" }
-);
+];
 
+// Loop through the descriptions and set them for each language
+descriptions.forEach(descriptionInfo => {
+  bot.setMyCommands(descriptionInfo);
+});
+    
 function setMyCommandsSuite() {
     const commands = [
         { command: "start", description: "Menu inicial", language_code: "pt" },
