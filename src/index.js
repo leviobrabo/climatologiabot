@@ -38,35 +38,41 @@ const languageToTimezone = {
 };
 
 const locales = fs.readdirSync(path.resolve(__dirname, 'locales'));
-
 const enDescriptionShort = i18n.t('en', 'description.short');
 
-for (const locale of locales) {
-    const localeName = locale.split('.')[0];
+async function processLocale(localeName) {
+    try {
+        const myShortDescription = await bot.telegram.callApi('getMyShortDescription', {
+            language_code: localeName,
+        });
 
+        const descriptionShort = i18n.t(localeName, 'description.short');
+        const newDescriptionShort = localeName === 'en' || descriptionShort !== enDescriptionShort
+            ? descriptionShort.replace(/[\r\n]/gm, '')
+            : '';
 
-    const myShortDescription = await bot.telegram.callApi('getMyShortDescription', {
-        language_code: localeName,
-    });
-
-    const descriptionShort = i18n.t(localeName, 'description.short');
-    const newDescriptionShort = localeName === 'en' || descriptionShort !== enDescriptionShort
-        ? descriptionShort.replace(/[\r\n]/gm, '')
-        : '';
-
-    if (newDescriptionShort !== myShortDescription.short_description.replace(/[\r\n]/gm, '')) {
-        try {
+        if (newDescriptionShort !== myShortDescription.short_description.replace(/[\r\n]/gm, '')) {
             const shortDescription = newDescriptionShort ? i18n.t(localeName, 'description.short') : '';
             const response = await bot.telegram.callApi('setMyShortDescription', {
                 short_description: shortDescription,
                 language_code: localeName,
             });
             console.log('setMyShortDescription', localeName, response);
-        } catch (error) {
-            console.error('setMyShortDescription', localeName, error.description);
         }
+    } catch (error) {
+        console.error('setMyShortDescription', localeName, error.description);
     }
 }
+
+// Use Promise.all to process locales concurrently
+const promises = locales.map(locale => processLocale(locale.split('.')[0]));
+Promise.all(promises)
+    .then(() => {
+        console.log('All locales processed successfully');
+    })
+    .catch(err => {
+        console.error('Error processing locales:', err);
+    });
 
 
 const descriptions = [
