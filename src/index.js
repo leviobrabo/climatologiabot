@@ -1,7 +1,5 @@
 const TelegramBot = require("node-telegram-bot-api");
 const axios = require("axios");
-const fs = require("fs");
-const path = require("path");
 require("dotenv").config();
 const { UserModel } = require("./database");
 const { ChatModel } = require("./database");
@@ -37,42 +35,28 @@ const languageToTimezone = {
     uk: "Europe/Kiev"
 };
 
-const locales = fs.readdirSync(path.resolve(__dirname, 'locales'));
-const enDescriptionShort = i18n.__('en', 'description_short'); // Updated key
+const shortDescriptions = [
+    { short_description: "I'm an inline bot that sends you the weather forecast for your city. \n\nOfficial Channel: @climatologiaofc", language_code: "en" },
+    { short_description: "Eu sou um bot inline que envia a previsão do tempo para a sua cidade. \n\nCanal Oficial: @climatologiaofc", language_code: "pt" },
+    { short_description: "Я - инлайн-бот, отправляющий вам прогноз погоды для вашего города. \n\nОфициальный канал: @climatologiaofc", language_code: "ru" },
+    { short_description: "Soy un bot en línea que te envía el pronóstico del tiempo para tu ciudad. \n\nCanal oficial: @climatologiaofc", language_code: "es" },
+    { short_description: "Je suis un bot en ligne qui vous envoie la prévision météorologique pour votre ville. \n\nChaîne officielle : @climatologiaofc", language_code: "fr" },
+    { short_description: "मैं एक इनलाइन बॉट हूं जो आपके शहर के लिए मौसम का पूर्वानुमान भेजता है। \n\nआधिकृत चैनल: @climatologiaofc", language_code: "hi" },
+    { short_description: "Sono un bot inline che invia le previsioni del tempo per la tua città. \n\nCanale ufficiale: @climatologiaofc", language_code: "it" },
+    { short_description: "Şehriniz için hava tahminini size gönderen bir iç içe botum. \n\nResmi Kanal: @climatologiaofc", language_code: "tr" },
+    { short_description: "Я - бот, який надсилає вам прогноз погоди для вашого міста. \n\nОфіційний канал: @climatologiaofc", language_code: "uk" }
+];
 
-async function processLocale(localeName) {
+// Iterate through the array and set short descriptions
+shortDescriptions.forEach(async (description) => {
     try {
-        const myShortDescription = await bot.telegram.callApi('getMyShortDescription', {
-            language_code: localeName,
-        });
-
-        const descriptionShort = i18n.__(localeName, 'description_short'); // Updated key
-        const newDescriptionShort = localeName === 'en' || descriptionShort !== enDescriptionShort
-            ? descriptionShort.replace(/[\r\n]/gm, '')
-            : '';
-
-        if (newDescriptionShort !== myShortDescription.short_description.replace(/[\r\n]/gm, '')) {
-            const shortDescription = newDescriptionShort ? i18n.__(localeName, 'description_short') : ''; // Updated key
-            const response = await bot.telegram.callApi('setMyShortDescription', {
-                short_description: shortDescription,
-                language_code: localeName,
-            });
-            console.log('setMyShortDescription', localeName, response);
-        }
+        const response = await bot.telegram.callApi('setMyShortDescription', description);
+        console.log('setMyShortDescription', description.language_code, response);
     } catch (error) {
-        console.error('setMyShortDescription', localeName, error.description);
+        console.error('setMyShortDescription', description.language_code, error.description);
     }
-}
+});
 
-// Use Promise.all to process locales concurrently
-const promises = locales.map(locale => processLocale(locale.split('.')[0]));
-Promise.all(promises)
-    .then(() => {
-        console.log('All locales processed successfully');
-    })
-    .catch(err => {
-        console.error('Error processing locales:', err);
-    });
 
 
 const descriptions = [
