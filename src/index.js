@@ -38,7 +38,7 @@ const languageToTimezone = {
 };
 
 const locales = fs.readdirSync(path.resolve(__dirname, 'locales'));
-const enDescriptionShort = i18n.__('en', 'description.short');
+const enDescriptionShort = i18n.__('en', 'description_short'); // Updated key
 
 async function processLocale(localeName) {
     try {
@@ -46,13 +46,13 @@ async function processLocale(localeName) {
             language_code: localeName,
         });
 
-        const descriptionShort = i18n.__(localeName, 'description.short');
+        const descriptionShort = i18n.__(localeName, 'description_short'); // Updated key
         const newDescriptionShort = localeName === 'en' || descriptionShort !== enDescriptionShort
             ? descriptionShort.replace(/[\r\n]/gm, '')
             : '';
 
         if (newDescriptionShort !== myShortDescription.short_description.replace(/[\r\n]/gm, '')) {
-            const shortDescription = newDescriptionShort ? i18n.__(localeName, 'description.short') : '';
+            const shortDescription = newDescriptionShort ? i18n.__(localeName, 'description_short') : ''; // Updated key
             const response = await bot.telegram.callApi('setMyShortDescription', {
                 short_description: shortDescription,
                 language_code: localeName,
