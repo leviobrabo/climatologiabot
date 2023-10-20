@@ -50,10 +50,10 @@ const shortDescriptions = [
 // Iterate through the array and set short descriptions
 shortDescriptions.forEach(async (description) => {
     try {
-        const response = await bot.telegram.callApi('setMyShortDescription', description);
-        console.log('setMyShortDescription', description.language_code, response);
+        const response = await bot.telegram.callApi('setMyCommands', description);
+        console.log('setMyCommands', description.language_code, response);
     } catch (error) {
-        console.error('setMyShortDescription', description.language_code, error.description);
+        console.error('setMyCommands', description.language_code, error.description);
     }
 });
 
