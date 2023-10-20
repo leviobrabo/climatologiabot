@@ -35,17 +35,37 @@ const languageToTimezone = {
     uk: "Europe/Kiev"
 };
 
-bot.setMyShortDescription(
-    { short_description: "I'm an inline bot that sends you the weather forecast for your city. \n\nOfficial Channel: @climatologiaofc", language_code: "en" },
-    { short_description: "Eu sou um bot inline que envia a previsão do tempo para a sua cidade. \n\nCanal Oficial: @climatologiaofc", language_code: "pt" },
-    { short_description: "Я - инлайн-бот, отправляющий вам прогноз погоды для вашего города. \n\nОфициальный канал: @climatologiaofc", language_code: "ru" },
-    { short_description: "Soy un bot en línea que te envía el pronóstico del tiempo para tu ciudad. \n\nCanal oficial: @climatologiaofc", language_code: "es" },
-    { short_description: "Je suis un bot en ligne qui vous envoie la prévision météorologique pour votre ville. \n\nChaîne officielle : @climatologiaofc", language_code: "fr" },
-    { short_description: "मैं एक इनलाइन बॉट हूं जो आपके शहर के लिए मौसम का पूर्वानुमान भेजता है। \n\nआधिकृत चैनल: @climatologiaofc", language_code: "hi" },
-    { short_description: "Sono un bot inline che invia le previsioni del tempo per la tua città. \n\nCanale ufficiale: @climatologiaofc", language_code: "it" },
-    { short_description: "Şehriniz için hava tahminini size gönderen bir iç içe botum. \n\nResmi Kanal: @climatologiaofc", language_code: "tr" },
-    { short_description: "Я - бот, який надсилає вам прогноз погоди для вашого міста. \n\nОфіційний канал: @climatologiaofc", language_code: "uk" }
-);
+const locales = fs.readdirSync(path.resolve(__dirname, 'locales'));
+
+const enDescriptionShort = i18n.t('en', 'description.short');
+
+for (const locale of locales) {
+    const localeName = locale.split('.')[0];
+
+
+    const myShortDescription = await bot.telegram.callApi('getMyShortDescription', {
+        language_code: localeName,
+    });
+
+    const descriptionShort = i18n.t(localeName, 'description.short');
+    const newDescriptionShort = localeName === 'en' || descriptionShort !== enDescriptionShort
+        ? descriptionShort.replace(/[\r\n]/gm, '')
+        : '';
+
+    if (newDescriptionShort !== myShortDescription.short_description.replace(/[\r\n]/gm, '')) {
+        try {
+            const shortDescription = newDescriptionShort ? i18n.t(localeName, 'description.short') : '';
+            const response = await bot.telegram.callApi('setMyShortDescription', {
+                short_description: shortDescription,
+                language_code: localeName,
+            });
+            console.log('setMyShortDescription', localeName, response);
+        } catch (error) {
+            console.error('setMyShortDescription', localeName, error.description);
+        }
+    }
+}
+
 
 const descriptions = [
     { description: "This Bot gives you weather information such as: weather, temperature, thermal sensation and humidity level in your city in real time.🌤 Official Channel: @climatologiaofc", language_code: "en" },
@@ -61,9 +81,9 @@ const descriptions = [
 
 // Loop through the descriptions and set them for each language
 descriptions.forEach(descriptionInfo => {
-  bot.setMyCommands(descriptionInfo);
+    bot.setMyCommands(descriptionInfo);
 });
-    
+
 function setMyCommandsSuite() {
     const commands = [
         { command: "start", description: "Menu inicial", language_code: "pt" },
