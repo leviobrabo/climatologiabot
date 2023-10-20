@@ -1,5 +1,7 @@
 const TelegramBot = require("node-telegram-bot-api");
 const axios = require("axios");
+const fs = require('fs');
+const path = require('path');
 require("dotenv").config();
 const { UserModel } = require("./database");
 const { ChatModel } = require("./database");
@@ -35,37 +37,37 @@ const languageToTimezone = {
     uk: "Europe/Kiev"
 };
 
-const locales = fs.readdirSync(path.resolve(__dirname, 'locales'));
 
+const locales = fs.readdirSync(path.resolve(__dirname, 'locales'));
 const enDescriptionShort = i18n.t('en', 'description.short');
+
+const updateShortDescription = async (localeName) => {
+    try {
+        const myShortDescription = await bot.getMyCommands();
+        const descriptionShort = i18n.t(localeName, 'description.short');
+        const newDescriptionShort = localeName === 'en' || descriptionShort !== enDescriptionShort
+            ? descriptionShort.replace(/[\r\n]/gm, '')
+            : '';
+
+        if (newDescriptionShort !== myShortDescription.short_description.replace(/[\r\n]/gm, '')) {
+            const shortDescription = newDescriptionShort ? i18n.t(localeName, 'description.short') : '';
+            await bot.setMyCommands([
+                {
+                    command: 'start',
+                    description: shortDescription,
+                }
+            ]);
+            console.log('Updated short description for', localeName);
+        }
+    } catch (error) {
+        console.error('Error updating short description for', localeName, error);
+    }
+};
 
 for (const locale of locales) {
     const localeName = locale.split('.')[0];
-
-
-    const myShortDescription = await bot.telegram.callApi('getMyShortDescription', {
-        language_code: localeName,
-    });
-
-    const descriptionShort = i18n.t(localeName, 'description.short');
-    const newDescriptionShort = localeName === 'en' || descriptionShort !== enDescriptionShort
-        ? descriptionShort.replace(/[\r\n]/gm, '')
-        : '';
-
-    if (newDescriptionShort !== myShortDescription.short_description.replace(/[\r\n]/gm, '')) {
-        try {
-            const shortDescription = newDescriptionShort ? i18n.t(localeName, 'description.short') : '';
-            const response = await bot.telegram.callApi('setMyShortDescription', {
-                short_description: shortDescription,
-                language_code: localeName,
-            });
-            console.log('setMyShortDescription', localeName, response);
-        } catch (error) {
-            console.error('setMyShortDescription', localeName, error.description);
-        }
-    }
+    updateShortDescription(localeName);
 }
-
 
 const descriptions = [
     { description: "This Bot gives you weather information such as: weather, temperature, thermal sensation and humidity level in your city in real time.🌤 Official Channel: @climatologiaofc", language_code: "en" },
