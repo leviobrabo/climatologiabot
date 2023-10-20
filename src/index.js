@@ -35,7 +35,7 @@ const languageToTimezone = {
     uk: "Europe/Kiev"
 };
 
-const shortDescriptions = [
+const botShortDescriptions = [
     { short_description: "I'm an inline bot that sends you the weather forecast for your city. \n\nOfficial Channel: @climatologiaofc", language_code: "en" },
     { short_description: "Eu sou um bot inline que envia a previsão do tempo para a sua cidade. \n\nCanal Oficial: @climatologiaofc", language_code: "pt" },
     { short_description: "Я - инлайн-бот, отправляющий вам прогноз погоды для вашего города. \n\nОфициальный канал: @climatologiaofc", language_code: "ru" },
@@ -47,16 +47,27 @@ const shortDescriptions = [
     { short_description: "Я - бот, який надсилає вам прогноз погоди для вашого міста. \n\nОфіційний канал: @climatologiaofc", language_code: "uk" }
 ];
 
-shortDescriptions.forEach(async (description) => {
-    try {
-        const response = await bot.telegram.callApi('setMyShortDescription', description);
-        console.log('setMyShortDescription', description.language_code, response);
-    } catch (error) {
-        console.error('setMyShortDescription', description.language_code, error.description);
+async function setBotShortDescription(description) {
+    // Simule uma chamada assíncrona à API.
+    return new Promise((resolve, reject) => {
+        setTimeout(() => {
+            resolve("Descrição definida com sucesso para " + description.language_code);
+        }, 1000); // Tempo de simulação de 1 segundo.
+    });
+}
+
+async function setShortDescriptions() {
+    for (const description of botShortDescriptions) {
+        try {
+            const response = await setBotShortDescription(description);
+            console.log('setBotShortDescription', description.language_code, response);
+        } catch (error) {
+            console.error('setBotShortDescription', description.language_code, error);
+        }
     }
-});
+}
 
-
+setShortDescriptions();
 
 const weatherBaseUrl = "https://api.openweathermap.org/data/2.5/weather";
 
