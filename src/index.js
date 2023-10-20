@@ -254,9 +254,7 @@ UserModel.on("save", (user) => {
   <b>Username:</b> ${user.username ? `@${user.username}` : "Não informado"}`;
     bot.sendMessage(groupId, message, { parse_mode: "HTML" });
 });
-bot.on("polling_error", (error) => {
-    console.error(error);
-});
+
 
 bot.onText(/\/start/, async (msg) => {
     if (msg.chat.type !== "private") {
@@ -854,9 +852,6 @@ bot.on("left_chat_member", async (msg) => {
     }
 });
 
-bot.on("polling_error", (error) => {
-    console.error(`Erro no bot de polling: ${error}`);
-});
 
 function timeFormatter(seconds) {
     const hours = Math.floor(seconds / 3600);
