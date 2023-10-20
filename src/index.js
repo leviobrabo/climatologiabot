@@ -59,49 +59,6 @@ shortDescriptions.forEach(async (description) => {
 
 
 
-const descriptions = [
-    { description: "This Bot gives you weather information such as: weather, temperature, thermal sensation and humidity level in your city in real time.🌤 Official Channel: @climatologiaofc", language_code: "en" },
-    { description: "Este Bot fornece informações meteorológicas, como: clima, temperatura, sensação térmica e nível de umidade em sua cidade em tempo real.🌤 Canal Oficial: @climatologiaofc", language_code: "pt" },
-    { description: "Этот бот предоставляет вам информацию о погоде, такую как: погода, температура, ощущение тепла и уровень влажности в вашем городе в реальном времени.🌤 Официальный канал: @climatologiaofc", language_code: "ru" },
-    { description: "Este Bot te brinda información del clima, como: el clima, la temperatura, la sensación térmica y el nivel de humedad en tu ciudad en tiempo real.🌤 Canal Oficial: @climatologiaofc", language_code: "es" },
-    { description: "Ce Bot vous fournit des informations météorologiques telles que: le temps, la température, la sensation thermique et le niveau d'humidité dans votre ville en temps réel.🌤 Chaîne officielle: @climatologiaofc", language_code: "fr" },
-    { description: "यह बॉट आपको आपके शहर में मौसम, तापमान, तापमान अनुभव और आपके शहर में ह्यूमिडिटी स्तर जैसी मौसम जानकारी देता है।🌤 आधिकृत चैनल: @climatologiaofc", language_code: "hi" },
-    { description: "Questo Bot ti fornisce informazioni meteorologiche come: meteo, temperatura, sensazione termica e livello di umidità nella tua città in tempo reale.🌤 Canale ufficiale: @climatologiaofc", language_code: "it" },
-    { description: "Bu Bot size gerçek zamanlı olarak şehrinizde hava durumu, sıcaklık, termal hissiyat ve nem seviyesi gibi hava durumu bilgilerini sunar.🌤 Resmi Kanal: @climatologiaofc", language_code: "tr" },
-    { description: "Цей бот надсилає вам інформацію про погоду, таку як: погода, температура, теплова сенсація та рівень вологості в вашому місті в реальному часі.🌤 Офіційний канал: @climatologiaofc", language_code: "uk" }
-];
-
-// Loop through the descriptions and set them for each language
-descriptions.forEach(descriptionInfo => {
-    bot.setMyCommands(descriptionInfo);
-});
-
-function setMyCommandsSuite() {
-    const commands = [
-        { command: "start", description: "Menu inicial", language_code: "pt" },
-        { command: "help", description: "Como usar o bot", language_code: "pt" },
-        { command: "start", description: "Main menu", language_code: "en" },
-        { command: "help", description: "How to use the bot", language_code: "en" },
-        { command: "start", description: "Главное меню", language_code: "ru" },
-        { command: "help", description: "Как использовать бота", language_code: "ru" },
-        { command: "start", description: "Menú principal", language_code: "es" },
-        { command: "help", description: "Cómo usar el bot", language_code: "es" },
-        { command: "start", description: "Menu principal", language_code: "fr" },
-        { command: "help", description: "Comment utiliser le bot", language_code: "fr" },
-        { command: "start", description: "मुख्य मेनू", language_code: "hi" },
-        { command: "help", description: "बॉट कैसे उपयोग करें", language_code: "hi" },
-        { command: "start", description: "Menu principale", language_code: "it" },
-        { command: "help", description: "Come usare il bot", language_code: "it" },
-        { command: "start", description: "Ana menü", language_code: "tr" },
-        { command: "help", description: "Botu nasıl kullanılır", language_code: "tr" },
-        { command: "start", description: "Головное меню", language_code: "uk" },
-        { command: "help", description: "Як користуватися ботом", language_code: "uk" },
-    ];
-
-    return bot.setMyCommands(commands);
-}
-
-
 const weatherBaseUrl = "https://api.openweathermap.org/data/2.5/weather";
 
 async function getUserLanguage(userId) {
