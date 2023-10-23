@@ -48,7 +48,9 @@ const shortDescriptions = [
     { short_description: "Я - бот, який надсилає вам прогноз погоди для вашого міста. \n\nОфіційний канал: @climatologiaofc", language_code: "uk" }
 ];
 
-bot.setMyShortDescription(shortDescriptions)
+bot.setMyShortDescription(shortDescriptions);
+
+bot.getMyShortDescription({ language_code: 'es' })
 
 const weatherBaseUrl = "https://api.openweathermap.org/data/2.5/weather";
 
@@ -67,15 +69,11 @@ async function getUserLanguage(userId) {
 }
 
 const chatCommands = [
-    { command: 'help', description: i18n.__("start_cmmd") },
-    { command: 'traducao', description: i18n.__("help_cmmd") },
+    { command: 'start', description: i18n.__("start_cmmd") },
+    { command: 'help', description: i18n.__("help_cmmd") },
 ];
 
 bot.setMyCommands(chatCommands, { scope: JSON.stringify({ type: 'all_private_chats', language_code: getUserLanguage }) })
-
-bot.setMyDescription({
-    description: 'Soy un bot en línea que te envía el pronóstico del tiempo para tu ciudad.\n\nCanal oficial: @climatologiaofc', language_code: 'es'
-})
 
 
 bot.on("inline_query", async (query) => {
