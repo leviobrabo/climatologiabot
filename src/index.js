@@ -69,8 +69,13 @@ async function getUserLanguage(userId) {
 }
 
 const chatCommands = [
-    { command: 'start', description: i18n.__("start_cmmd") },
-    { command: 'help', description: i18n.__("help_cmmd") },
+    {
+        command: 'start', description: i18n.__({ phrase: "start_cmmd", locale: getUserLanguage })
+    },
+    {
+        command: 'help', description: i18n.__({ phrase: "help_cmmd", locale: getUserLanguage })
+    },
+
 ];
 
 bot.setMyCommands(chatCommands, { scope: JSON.stringify({ type: 'all_private_chats', language_code: getUserLanguage }) })
