@@ -35,6 +35,7 @@ const languageToTimezone = {
     uk: "Europe/Kiev"
 };
 
+
 const shortDescriptions = [
     { short_description: "I'm an inline bot that sends you the weather forecast for your city. \n\nOfficial Channel: @climatologiaofc", language_code: "en" },
     { short_description: "Eu sou um bot inline que envia a previsão do tempo para a sua cidade. \n\nCanal Oficial: @climatologiaofc", language_code: "pt" },
@@ -47,14 +48,7 @@ const shortDescriptions = [
     { short_description: "Я - бот, який надсилає вам прогноз погоди для вашого міста. \n\nОфіційний канал: @climatologiaofc", language_code: "uk" }
 ];
 
-shortDescriptions.forEach(async (description) => {
-    try {
-        const response = await bot.setMyCommands(description);
-        console.log('setMyShortDescription', description.language_code, response);
-    } catch (error) {
-        console.error('setMyShortDescription', description.language_code, error.description);
-    }
-});
+bot.setMyShortDescription(shortDescriptions)
 
 const weatherBaseUrl = "https://api.openweathermap.org/data/2.5/weather";
 
@@ -71,6 +65,18 @@ async function getUserLanguage(userId) {
         return i18n.defaultLocale;
     }
 }
+
+const chatCommands = [
+    { command: 'help', description: i18n.__("start_cmmd") },
+    { command: 'traducao', description: i18n.__("help_cmmd") },
+];
+
+bot.setMyCommands(chatCommands, { scope: JSON.stringify({ type: 'all_private_chats', language_code: getUserLanguage }) })
+
+bot.setMyDescription({
+    description: 'Soy un bot en línea que te envía el pronóstico del tiempo para tu ciudad.\n\nCanal oficial: @climatologiaofc', language_code: 'es'
+})
+
 
 bot.on("inline_query", async (query) => {
     const userId = query.from.id;

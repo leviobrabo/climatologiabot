@@ -31,5 +31,7 @@
     "pv_message_lang": "⚙️ Veuillez cliquer sur le bouton ci-dessous pour changer la langue dans un chat privé.",
     "pv_message_lang_button": "🇫🇷 Changer de langue",
     "git_to_use": "Comment utiliser ce bot",
-    "description_short": "Je suis un bot en ligne qui vous envoie la prévision météorologique pour votre ville. \n\nChaîne officielle : @climatologiaofc"
+    "description_short": "Je suis un bot en ligne qui vous envoie la prévision météorologique pour votre ville. \n\nChaîne officielle : @climatologiaofc",
+    "start_cmmd": "Démarrer le bot",
+    "help_cmmd": "Fonctionnalités du bot"
 }

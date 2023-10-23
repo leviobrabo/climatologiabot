@@ -31,5 +31,7 @@
     "pv_message_lang": "⚙️ Please click the button below to change the language in a private chat.",
     "pv_message_lang_button": "🇺🇸 Change language",
     "git_to_use": "How to use this bot",
-    "description_short": "I'm an inline bot that sends you the weather forecast for your city. \n\nOfficial Channel: @climatologiaofc"
+    "description_short": "I'm an inline bot that sends you the weather forecast for your city. \n\nOfficial Channel: @climatologiaofc",
+    "start_cmmd": "Start the bot",
+    "help_cmmd": "Bot's functionalities"
 }
