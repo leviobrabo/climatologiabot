@@ -344,6 +344,12 @@ bot.on("callback_query", async (callbackQuery) => {
                 inline_keyboard: [
                     [
                         {
+                            text: i18n.__("inline_psq"),
+                            switch_inline_query_current_chat: '',
+                        },
+                    ],
+                    [
+                        {
                             text: i18n.__("support_group_button"),
                             url: "https://t.me/climatologiaofc",
                         },
@@ -636,8 +642,8 @@ bot.on("callback_query", async (callbackQuery) => {
                 inline_keyboard: [
                     [
                         {
-                            text: i18n.__("addGroup"),
-                            url: "https://t.me/climatologiabot?startgroup=true",
+                            text: i18n.__("inline_psq"),
+                            switch_inline_query_current_chat: '',
                         },
                     ],
                     [
@@ -652,9 +658,19 @@ bot.on("callback_query", async (callbackQuery) => {
                     ],
                     [
                         {
+                            text: i18n.__("addGroup"),
+                            url: "https://t.me/climatologiabot?startgroup=true",
+                        }
+                    ],
+                    [
+                        {
                             text: i18n.__("langMessage"),
                             callback_data: "choose_language",
                         },
+                        {
+                            text: "📦 Github",
+                            url: "https://github.com/leviobrabo/climatologiabot",
+                        }
                     ],
                 ],
             },

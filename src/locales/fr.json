@@ -9,7 +9,7 @@
     "chooseLanguage": "Sélectionnez la langue que vous souhaitez utiliser dans le bot",
     "langChangedMessage": "Votre langue a été réglée sur le français 🇫🇷",
     "chooseLangMessage": "Sélectionnez la langue que vous souhaitez utiliser dans le bot:",
-    "inline_psq": "Recherchez la météo dans votre ville",
+    "inline_psq": "🔎 Recherchez la météo dans votre ville",
     "how_to_use": "Comment utiliser le bot",
     "title_init": "Recherchez la météo dans votre ville",
     "description_init": "Pour rechercher, saisissez le nom de votre ville",

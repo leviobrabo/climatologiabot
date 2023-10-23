@@ -9,7 +9,7 @@
     "chooseLanguage": "Selecione o idioma que você quer utilizar no bot",
     "langChangedMessage": "Seu idioma foi definido para Português 🇧🇷",
     "chooseLangMessage": "Selecione o idioma que você quer utilizar no bot:",
-    "inline_psq": "Pesquise o clima em sua cidade",
+    "inline_psq": "🔎 Pesquise o clima em sua cidade",
     "how_to_use": "Como usar o bot",
     "title_init": "Pesquise o clima em sua cidade",
     "description_init": "Para pesquisar, digite o nome de sua cidade",
