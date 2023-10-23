@@ -35,23 +35,6 @@ const languageToTimezone = {
     uk: "Europe/Kiev"
 };
 
-
-const shortDescriptions = [
-    { short_description: "I'm an inline bot that sends you the weather forecast for your city. \n\nOfficial Channel: @climatologiaofc", language_code: "en" },
-    { short_description: "Eu sou um bot inline que envia a previsão do tempo para a sua cidade. \n\nCanal Oficial: @climatologiaofc", language_code: "pt" },
-    { short_description: "Я - инлайн-бот, отправляющий вам прогноз погоды для вашего города. \n\nОфициальный канал: @climatologiaofc", language_code: "ru" },
-    { short_description: "Soy un bot en línea que te envía el pronóstico del tiempo para tu ciudad. \n\nCanal oficial: @climatologiaofc", language_code: "es" },
-    { short_description: "Je suis un bot en ligne qui vous envoie la prévision météorologique pour votre ville. \n\nChaîne officielle : @climatologiaofc", language_code: "fr" },
-    { short_description: "मैं एक इनलाइन बॉट हूं जो आपके शहर के लिए मौसम का पूर्वानुमान भेजता है। \n\nआधिकृत चैनल: @climatologiaofc", language_code: "hi" },
-    { short_description: "Sono un bot inline che invia le previsioni del tempo per la tua città. \n\nCanale ufficiale: @climatologiaofc", language_code: "it" },
-    { short_description: "Şehriniz için hava tahminini size gönderen bir iç içe botum. \n\nResmi Kanal: @climatologiaofc", language_code: "tr" },
-    { short_description: "Я - бот, який надсилає вам прогноз погоди для вашого міста. \n\nОфіційний канал: @climatologiaofc", language_code: "uk" }
-];
-
-bot.setMyShortDescription(shortDescriptions);
-
-bot.getMyShortDescription({ language_code: 'es' })
-
 const weatherBaseUrl = "https://api.openweathermap.org/data/2.5/weather";
 
 async function getUserLanguage(userId) {
