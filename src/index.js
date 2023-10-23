@@ -74,13 +74,24 @@ async function getUserLanguage(userId) {
 
 bot.on("inline_query", async (query) => {
     const userId = query.from.id;
-    userLanguage = await getUserLanguage(userId) || "en";
+    const userLanguage = await getUserLanguage(userId) || "en";
     const cityName = query.query;
     const timezone = languageToTimezone[userLanguage] || "America/New_York";
 
 
     if (!cityName) {
-        await bot.answerInlineQuery(query.id, [], {
+        const result_init = {
+            type: 'article',
+            id: query.id,
+            title: i18n.__({ phrase: "title_init", locale: userLanguage }),
+            description: i18n.__({ phrase: "description_init", locale: userLanguage }),
+            input_message_content: {
+                message_text: i18n.__({ phrase: "msg_text_init", locale: userLanguage }),
+                parse_mode: 'HTML',
+            },
+            thumbnail_url: 'https://i.imgur.com/7OVSbzi.jpeg',
+        }
+        await bot.answerInlineQuery(query.id, [result_init], {
             switch_pm_text: i18n.__({ phrase: "how_to_use", locale: userLanguage }),
             switch_pm_parameter: "how_to_use",
             cache_time: 0,
@@ -186,7 +197,7 @@ bot.on("inline_query", async (query) => {
                     message_text: message1,
                     parse_mode: "markdown",
                 },
-                thumb_url: weatherIconUrl,
+                thumbnail_url: weatherIconUrl,
             },
         ];
 
@@ -205,7 +216,7 @@ bot.on("inline_query", async (query) => {
                 input_message_content: {
                     message_text: errorMessage,
                 },
-                thumb_url:
+                thumbnail_url:
                     "https://e7.pngegg.com/pngimages/804/92/png-clipart-computer-icons-error-exit-miscellaneous-trademark.png",
             },
         ];
