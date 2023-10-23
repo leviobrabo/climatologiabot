@@ -291,8 +291,8 @@ bot.onText(/\/start/, async (msg) => {
             inline_keyboard: [
                 [
                     {
-                        text: i18n.__("addGroup"),
-                        url: "https://t.me/climatologiabot?startgroup=true",
+                        text: i18n.__("inline_psq"),
+                        switch_inline_query_current_chat: '',
                     },
                 ],
                 [
@@ -307,9 +307,19 @@ bot.onText(/\/start/, async (msg) => {
                 ],
                 [
                     {
+                        text: i18n.__("addGroup"),
+                        url: "https://t.me/climatologiabot?startgroup=true",
+                    }
+                ],
+                [
+                    {
                         text: i18n.__("langMessage"),
                         callback_data: "choose_language",
                     },
+                    {
+                        text: "📦 Github",
+                        url: "https://github.com/leviobrabo/climatologiabot",
+                    }
                 ],
             ],
         },
