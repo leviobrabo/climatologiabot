@@ -1255,13 +1255,13 @@ bot.onText(/\/sendgp/, async (msg, match) => {
 });
 
 function sendBotOnlineMessage() {
-    console.log(`Toguro iniciado com sucesso...`);
-    bot.sendMessage(groupId, `#Toguro #ONLINE\n\nBot is now playing ...`);
+    console.log(`Janna iniciado com sucesso...`);
+    bot.sendMessage(groupId, `#Janna #ONLINE\n\nBot is now playing ...`);
 }
 
 function sendBotOfflineMessage() {
-    console.log(`Toguro encerrado com sucesso...`);
-    bot.sendMessage(groupId, `#Toguro #OFFLINE\n\nBot is now off ...`)
+    console.log(`Janna encerrado com sucesso...`);
+    bot.sendMessage(groupId, `#Janna #OFFLINE\n\nBot is now off ...`)
         .then(() => {
             process.exit(0); // Encerra o processo do bot após enviar a mensagem offline
         })
