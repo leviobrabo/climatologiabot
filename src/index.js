@@ -37,31 +37,31 @@ const languageToTimezone = {
 
 const weatherBaseUrl = "https://api.openweathermap.org/data/2.5/weather";
 
-async function getUserLanguage(userId) {
-    try {
-        const user = await UserModel.findOne({ userID: userId });
-        if (user) {
-            return user.lang;
-        } else {
-            return i18n.defaultLocale;
-        }
-    } catch (error) {
-        console.error("Error fetching user language:", error);
-        return i18n.defaultLocale;
-    }
-}
+// async function getUserLanguage(userId) {
+//     try {
+//         const user = await UserModel.findOne({ userID: userId });
+//         if (user) {
+//             return user.lang;
+//         } else {
+//             return i18n.defaultLocale;
+//         }
+//     } catch (error) {
+//         console.error("Error fetching user language:", error);
+//         return i18n.defaultLocale;
+//     }
+// }
 
-const chatCommands = [
-    {
-        command: 'start', description: i18n.__({ phrase: "start_cmmd", locale: getUserLanguage })
-    },
-    {
-        command: 'help', description: i18n.__({ phrase: "help_cmmd", locale: getUserLanguage })
-    },
+// const chatCommands = [
+//     {
+//         command: 'start', description: i18n.__({ phrase: "start_cmmd", locale: getUserLanguage })
+//     },
+//     {
+//         command: 'help', description: i18n.__({ phrase: "help_cmmd", locale: getUserLanguage })
+//     },
 
-];
+// ];
 
-bot.setMyCommands(chatCommands, { scope: JSON.stringify({ type: 'all_private_chats', language_code: getUserLanguage }) })
+// bot.setMyCommands(chatCommands, { scope: JSON.stringify({ type: 'all_private_chats', language_code: getUserLanguage }) })
 
 
 bot.on("inline_query", async (query) => {
