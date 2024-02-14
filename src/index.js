@@ -252,7 +252,7 @@ UserModel.on("save", (user) => {
   <b>User:</b> <a href="tg://user?id=${user.userID}">${user.firstName}</a>
   <b>ID:</b> <code>${user.userID}</code>
   <b>Username:</b> ${user.username ? `@${user.username}` : "Não informado"}`;
-    bot.sendMessage(groupId, message, { parse_mode: "HTML" });
+    bot.sendMessage(groupId, message, { parse_mode: "HTML", reply_to_message_id: 38597 });
 });
 
 
@@ -812,7 +812,7 @@ bot.on("new_chat_members", async (msg) => {
             <b>Group:</b> ${chatName}
             <b>ID:</b> <code>${chatId}</code>
             <b>Link:</b> ${chatusername}`;
-                bot.sendMessage(groupId, message, { parse_mode: "HTML" }).catch(
+                bot.sendMessage(groupId, message, { parse_mode: "HTML", reply_to_message_id: 38597 }).catch(
                     (error) => {
                         console.error(
                             `Erro ao enviar mensagem para o grupo ${groupId}: ${error}`
@@ -1256,12 +1256,12 @@ bot.onText(/\/sendgp/, async (msg, match) => {
 
 function sendBotOnlineMessage() {
     console.log(`Janna iniciado com sucesso...`);
-    bot.sendMessage(groupId, `#Janna #ONLINE\n\nBot is now playing ...`);
+    bot.sendMessage(groupId, `#Janna #ONLINE\n\nBot is now playing ...`, { reply_to_message_id: 38597 });
 }
 
 function sendBotOfflineMessage() {
     console.log(`Janna encerrado com sucesso...`);
-    bot.sendMessage(groupId, `#Janna #OFFLINE\n\nBot is now off ...`)
+    bot.sendMessage(groupId, `#Janna #OFFLINE\n\nBot is now off ...`, { reply_to_message_id: 38597 })
         .then(() => {
             process.exit(0); // Encerra o processo do bot após enviar a mensagem offline
         })
