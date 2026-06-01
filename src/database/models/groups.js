@@ -10,6 +10,7 @@ const ChatSchema = new Schema({
         type: String,
         required: true,
     },
+    joinedAt: { type: Date, default: Date.now },
 });
 
 module.exports = ChatSchema;

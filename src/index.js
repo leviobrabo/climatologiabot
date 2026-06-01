@@ -1,21 +1,89 @@
 const TelegramBot = require("node-telegram-bot-api");
 const axios = require("axios");
 require("dotenv").config();
-const { UserModel } = require("./database");
-const { ChatModel } = require("./database");
+const { UserModel, ChatModel } = require("./database");
 const CronJob = require("cron").CronJob;
 const i18n = require("i18n");
 
+// --- Env validation ---
+const REQUIRED_ENV = ["TELEGRAM_BOT_TOKEN", "DB_STRING", "groupId"];
+for (const key of REQUIRED_ENV) {
+    if (!process.env[key]) {
+        console.error(`Missing required environment variable: ${key}`);
+        process.exit(1);
+    }
+}
+
 const token = process.env.TELEGRAM_BOT_TOKEN;
+const groupId = process.env.groupId;
+const channelStatusId = process.env.channelStatusId;
 
 const bot = new TelegramBot(token, { polling: true });
+
+// --- Helpers ---
 function is_dev(user_id) {
-    const devUsers = process.env.DEV_USERS.split(",");
+    const devUsers = (process.env.DEV_USERS || "").split(",").filter(Boolean);
     return devUsers.includes(user_id.toString());
 }
 
+function timeFormatter(seconds) {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    return [h, m, s].map(n => String(n).padStart(2, "0")).join(":");
+}
+
+function getTemperatureEmoji(temp) {
+    if (temp < -10) return "❄️";
+    if (temp < 0) return "🥶";
+    if (temp < 10) return "🧊";
+    if (temp < 20) return "🌡️";
+    if (temp < 25) return "🌤️";
+    if (temp < 30) return "☀️";
+    if (temp < 35) return "🔥";
+    return "🥵";
+}
+
+const WMO_ICONS = {
+    0: "01d", 1: "01d", 2: "02d", 3: "04d",
+    45: "50d", 48: "50d",
+    51: "09d", 53: "09d", 55: "09d",
+    61: "10d", 63: "10d", 65: "10d",
+    71: "13d", 73: "13d", 75: "13d", 77: "13d",
+    80: "09d", 81: "09d", 82: "09d",
+    85: "13d", 86: "13d",
+    95: "11d", 96: "11d", 99: "11d",
+};
+
+const WMO_EMOJIS = {
+    0: "☀️", 1: "🌤️", 2: "⛅", 3: "☁️",
+    45: "🌫️", 48: "🌫️",
+    51: "🌦️", 53: "🌦️", 55: "🌧️",
+    61: "🌧️", 63: "🌧️", 65: "🌧️",
+    71: "❄️", 73: "❄️", 75: "❄️", 77: "❄️",
+    80: "🌧️", 81: "🌧️", 82: "🌧️",
+    85: "🌨️", 86: "🌨️",
+    95: "⛈️", 96: "⛈️", 99: "⛈️",
+};
+
+function getWeatherIconUrl(wmoCode) {
+    const icon = WMO_ICONS[wmoCode] || "01d";
+    return `https://openweathermap.org/img/wn/${icon}.png`;
+}
+
+function getWeatherEmoji(wmoCode) {
+    return WMO_EMOJIS[wmoCode] || "🌡️";
+}
+
+function formatTime(isoString) {
+    if (!isoString) return "--:--";
+    const parts = isoString.split("T");
+    return parts.length > 1 ? parts[1] : "--:--";
+}
+
+// --- i18n config ---
 i18n.configure({
-    locales: ["en", "pt", "ru", "es", "fr", "hi", "it", "tr", "uk"],
+    locales: ["en", "pt", "ru", "es", "fr", "hi", "it", "tr", "uk", "de", "ar", "id", "fa"],
     directory: __dirname + "/locales",
     defaultLocale: "en",
     queryParameter: "lang",
@@ -32,236 +100,321 @@ const languageToTimezone = {
     hi: "Asia/Kolkata",
     it: "Europe/Rome",
     tr: "Europe/Istanbul",
-    uk: "Europe/Kiev"
+    uk: "Europe/Kiev",
+    de: "Europe/Berlin",
+    ar: "Asia/Riyadh",
+    id: "Asia/Jakarta",
+    fa: "Asia/Tehran",
 };
 
-const weatherBaseUrl = "https://api.openweathermap.org/data/2.5/weather";
-
+// --- DB helper ---
 async function getUserLanguage(userId) {
-     try {
-         const user = await UserModel.findOne({ userID: userId });
-         if (user) {
-             return user.lang;
-         } else {
-            return i18n.defaultLocale;
-         }
-     } catch (error) {
-         console.error("Error fetching user language:", error);
-         return i18n.defaultLocale;
-     }
- }
+    try {
+        const user = await UserModel.findOne({ userID: userId });
+        return user ? user.lang : "en";
+    } catch {
+        return "en";
+    }
+}
 
-// const chatCommands = [
-//     {
-//         command: 'start', description: i18n.__({ phrase: "start_cmmd", locale: getUserLanguage })
-//     },
-//     {
-//         command: 'help', description: i18n.__({ phrase: "help_cmmd", locale: getUserLanguage })
-//     },
+// --- Open-Meteo API (free, no API key required) ---
+const GEO_URL = "https://geocoding-api.open-meteo.com/v1/search";
+const WEATHER_URL = "https://api.open-meteo.com/v1/forecast";
 
-// ];
+async function getWeatherData(cityName) {
+    const geoRes = await axios.get(GEO_URL, {
+        params: { name: cityName, count: 1, language: "en", format: "json" },
+        timeout: 8000,
+    });
 
-// bot.setMyCommands(chatCommands, { scope: JSON.stringify({ type: 'all_private_chats', language_code: getUserLanguage }) })
+    if (!geoRes.data.results || geoRes.data.results.length === 0) {
+        throw new Error("City not found");
+    }
 
+    const { latitude, longitude, name, country_code, timezone } = geoRes.data.results[0];
 
+    const weatherRes = await axios.get(WEATHER_URL, {
+        params: {
+            latitude,
+            longitude,
+            current: "temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,wind_gusts_10m,uv_index",
+            daily: "weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_probability_max,uv_index_max",
+            wind_speed_unit: "kmh",
+            timezone: timezone || "auto",
+            forecast_days: 4,
+        },
+        timeout: 8000,
+    });
+
+    const d = weatherRes.data;
+    return {
+        city: name,
+        countryCode: country_code || "",
+        timezone: timezone || "UTC",
+        current: {
+            temperature: Math.round(d.current.temperature_2m),
+            humidity: d.current.relative_humidity_2m,
+            feelsLike: Math.round(d.current.apparent_temperature),
+            weatherCode: d.current.weather_code,
+            windSpeed: Math.round(d.current.wind_speed_10m),
+            windGusts: Math.round(d.current.wind_gusts_10m),
+            uvIndex: parseFloat((d.current.uv_index || 0).toFixed(1)),
+        },
+        today: {
+            precipitationProbability: d.daily.precipitation_probability_max[0] ?? 0,
+            sunrise: formatTime(d.daily.sunrise[0]),
+            sunset: formatTime(d.daily.sunset[0]),
+        },
+        forecast: d.daily.time.slice(1, 4).map((date, i) => ({
+            date,
+            weatherCode: d.daily.weather_code[i + 1],
+            tempMax: Math.round(d.daily.temperature_2m_max[i + 1]),
+            tempMin: Math.round(d.daily.temperature_2m_min[i + 1]),
+            precipProbability: d.daily.precipitation_probability_max[i + 1] ?? 0,
+            uvIndexMax: parseFloat((d.daily.uv_index_max[i + 1] || 0).toFixed(1)),
+        })),
+    };
+}
+
+// --- Groups cache for /grupos pagination ---
+const groupsCache = new Map();
+
+// --- inline_query ---
 bot.on("inline_query", async (query) => {
     const userId = query.from.id;
-    const userLanguage = await getUserLanguage(userId) || "en";
-    const cityName = query.query;
-    const timezone = languageToTimezone[userLanguage] || "America/New_York";
+    const lang = await getUserLanguage(userId) || "en";
+    const cityName = query.query.trim();
+    const timezone = languageToTimezone[lang] || "UTC";
 
+    UserModel.findOneAndUpdate(
+        { userID: userId },
+        { lastActiveAt: new Date(), $inc: { searchCount: 1 } }
+    ).catch(() => {});
 
     if (!cityName) {
-        const result_init = {
-            type: 'article',
-            id: query.id,
-            title: i18n.__({ phrase: "title_init", locale: userLanguage }),
-            description: i18n.__({ phrase: "description_init", locale: userLanguage }),
+        await bot.answerInlineQuery(query.id, [{
+            type: "article",
+            id: "init",
+            title: i18n.__({ phrase: "title_init", locale: lang }),
+            description: i18n.__({ phrase: "description_init", locale: lang }),
             input_message_content: {
-                message_text: i18n.__({ phrase: "msg_text_init", locale: userLanguage }),
-                parse_mode: 'HTML',
+                message_text: i18n.__({ phrase: "msg_text_init", locale: lang }),
+                parse_mode: "HTML",
             },
-            thumbnail_url: 'https://i.imgur.com/7OVSbzi.jpeg',
-        }
-        await bot.answerInlineQuery(query.id, [result_init], {
-            switch_pm_text: i18n.__({ phrase: "how_to_use", locale: userLanguage }),
+            thumbnail_url: "https://i.imgur.com/7OVSbzi.jpeg",
+        }], {
+            switch_pm_text: i18n.__({ phrase: "how_to_use", locale: lang }),
             switch_pm_parameter: "how_to_use",
             cache_time: 0,
         });
-
         return;
     }
 
-    let units = "metric";
-    let lang = userLanguage;
-
-    i18n.setLocale(lang);
-
     try {
-        const response = await axios.get(
-            `${weatherBaseUrl}?q=${cityName}&appid=${process.env.WEATHER_API_KEY}&units=${units}&lang=${lang}`
-        );
+        const weather = await getWeatherData(cityName);
+        const { current, today, forecast, city, countryCode } = weather;
+        const weatherCode = current.weatherCode;
+        const emoji = getTemperatureEmoji(current.temperature);
+        const weatherEmoji = getWeatherEmoji(weatherCode);
+        const weatherDescription = i18n.__({ phrase: `wmo_${weatherCode}`, locale: lang });
+        const iconUrl = getWeatherIconUrl(weatherCode);
 
-        const weatherData = response.data;
-        const temperature = Math.round(weatherData.main.temp);
-        const weatherDescription = weatherData.weather[0].description;
-        const weatherIconCode = weatherData.weather[0].icon;
-        const feelsLike = Math.round(weatherData.main.feels_like);
-        const windSpeed = Math.round(weatherData.wind.speed);
-        const humidity = weatherData.main.humidity;
-        const emoji = getTemperatureEmoji(temperature);
-        const countryCode = weatherData.sys.country || "";
-        const agora = new Date();
-        const opcoes = { timeZone: timezone };
-        const horarioFormatado = agora.toLocaleTimeString("pt-BR", opcoes);
+        const now = new Date();
+        const horarioFormatado = now.toLocaleTimeString("pt-BR", { timeZone: timezone });
 
-        const weatherIconUrl = `http://openweathermap.org/img/wn/${weatherIconCode}.png`;
-
-        const firstAlert = weatherData.alerts ? weatherData.alerts[0] : null;
-
-        let alertMessage;
-        if (firstAlert) {
-            const alertEvent = firstAlert.event;
-            const alertDescription = firstAlert.description;
-            const alertTags = firstAlert.tags.join(", ");
-
-            alertMessage = i18n.__("alert_message", {
-                alertEvent,
-                alertDescription,
-                alertTags,
+        const forecastLines = forecast.map(day => {
+            const de = getWeatherEmoji(day.weatherCode);
+            const dateStr = new Date(day.date + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
+            return i18n.__({ phrase: "daily_forecast_line", locale: lang }, {
+                weatherEmoji: de,
+                date: dateStr,
+                tempMin: day.tempMin,
+                tempMax: day.tempMax,
+                precipProbability: day.precipProbability,
+                uvIndexMax: day.uvIndexMax,
             });
-        } else {
-            alertMessage = i18n.__("no_alert_message");
-        }
+        }).join("\n");
 
-        const message = i18n.__("weather_forecast_message", {
+        const msgParams = {
+            cityName: city.toUpperCase(),
             emoji,
-            temperature,
-            weatherDescription: weatherDescription.charAt(0).toUpperCase() + weatherDescription.slice(1).toLowerCase(),
-            feelsLike,
-            windSpeed,
-            humidity,
+            weatherEmoji,
+            temperature: current.temperature,
+            weatherDescription,
+            feelsLike: current.feelsLike,
+            windSpeed: current.windSpeed,
+            windGusts: current.windGusts,
+            uvIndex: current.uvIndex,
+            humidity: current.humidity,
+            precipitationProbability: today.precipitationProbability,
+            sunrise: today.sunrise,
+            sunset: today.sunset,
             countryCode,
             horarioFormatado,
-            alertMessage,
-        });
-        const message1 = i18n.__("city_weather_forecast_message", {
-            cityName: cityName.toUpperCase(),
-            emoji,
-            temperature,
-            weatherDescription: weatherDescription.charAt(0).toUpperCase() + weatherDescription.slice(1).toLowerCase(),
-            feelsLike,
-            windSpeed,
-            humidity,
-            countryCode,
-            horarioFormatado,
-            alertMessage,
-        });
-        const title_message_visible = i18n.__("title_message_visible");
-        const description_visible = i18n.__("description_visible", {
-            cityName: cityName,
-            countryCode,
-        });
-        const title_message_hidden = i18n.__("title_message_hidden");
-        const description_hidden = i18n.__("description_hidden", {
-            cityName: cityName,
-            countryCode,
-        });
+            forecastLines,
+        };
 
-        const result = [
+        const results = [
             {
                 type: "article",
                 id: "1",
-                title: title_message_hidden,
-                description: description_hidden,
+                title: i18n.__({ phrase: "title_message_hidden", locale: lang }),
+                description: i18n.__({ phrase: "description_hidden", locale: lang }, { cityName: city, countryCode }),
                 input_message_content: {
-                    message_text: message,
-                    parse_mode: "markdown",
+                    message_text: i18n.__({ phrase: "weather_forecast_message", locale: lang }, msgParams),
+                    parse_mode: "Markdown",
                 },
-                thumb_url: weatherIconUrl,
+                thumbnail_url: iconUrl,
             },
             {
                 type: "article",
                 id: "2",
-                title: title_message_visible,
-                description: description_visible,
+                title: i18n.__({ phrase: "title_message_visible", locale: lang }),
+                description: i18n.__({ phrase: "description_visible", locale: lang }, { cityName: city, countryCode }),
                 input_message_content: {
-                    message_text: message1,
-                    parse_mode: "markdown",
+                    message_text: i18n.__({ phrase: "city_weather_forecast_message", locale: lang }, msgParams),
+                    parse_mode: "Markdown",
                 },
-                thumbnail_url: weatherIconUrl,
+                thumbnail_url: iconUrl,
             },
-        ];
-
-        bot.answerInlineQuery(query.id, result);
-        console.log(result);
-    } catch (error) {
-        console.log(error);
-
-        const errorMessage = i18n.__("erro_message");
-        const errorResult = [
             {
                 type: "article",
                 id: "3",
-                title: i18n.__("title_error"),
-                description: i18n.__("description_error"),
+                title: i18n.__({ phrase: "title_message_forecast", locale: lang }),
+                description: i18n.__({ phrase: "description_forecast", locale: lang }, { cityName: city, countryCode }),
                 input_message_content: {
-                    message_text: errorMessage,
+                    message_text: i18n.__({ phrase: "daily_forecast_message", locale: lang }, msgParams),
+                    parse_mode: "Markdown",
                 },
-                thumbnail_url:
-                    "https://e7.pngegg.com/pngimages/804/92/png-clipart-computer-icons-error-exit-miscellaneous-trademark.png",
+                thumbnail_url: iconUrl,
             },
         ];
 
-        bot.answerInlineQuery(query.id, errorResult);
+        await bot.answerInlineQuery(query.id, results);
+    } catch {
+        await bot.answerInlineQuery(query.id, [{
+            type: "article",
+            id: "err",
+            title: i18n.__({ phrase: "title_error", locale: lang }),
+            description: i18n.__({ phrase: "description_error", locale: lang }),
+            input_message_content: {
+                message_text: i18n.__({ phrase: "erro_message", locale: lang }),
+            },
+            thumbnail_url: "https://e7.pngegg.com/pngimages/804/92/png-clipart-computer-icons-error-exit-miscellaneous-trademark.png",
+        }]);
     }
 });
 
-function getTemperatureEmoji(temperature) {
-    if (temperature < -10) {
-        return "❄️";
-    } else if (temperature < 0) {
-        return "🥶";
-    } else if (temperature < 10) {
-        return "🧊";
-    } else if (temperature < 20) {
-        return "🌡️";
-    } else if (temperature < 25) {
-        return "🌤️";
-    } else if (temperature < 30) {
-        return "☀️";
-    } else if (temperature < 35) {
-        return "🔥";
-    } else {
-        return "🥵";
-    }
-}
-
+// --- /stats ---
 bot.onText(/\/stats/, async (msg) => {
-    const chatId = msg.chat.id;
-    const numUsers = await UserModel.countDocuments();
-    const numChats = await ChatModel.countDocuments();
-    const message = `\n──❑ 「 Bot Stats 」 ❑──\n\n ☆ ${numUsers} usuários\n ☆ ${numChats} chats`;
-    bot.sendMessage(chatId, message);
+    if (!is_dev(msg.from.id)) return;
+
+    const now = new Date();
+    const d1ago  = new Date(now - 1  * 24 * 60 * 60 * 1000);
+    const d7ago  = new Date(now - 7  * 24 * 60 * 60 * 1000);
+    const d30ago = new Date(now - 30 * 24 * 60 * 60 * 1000);
+
+    const [
+        totalUsers, totalChats,
+        dau, wau, mau,
+        d1Eligible, d7Eligible, d30Eligible,
+        d1Returned, d7Returned, d30Returned,
+        langAgg, refAgg, topUsers,
+    ] = await Promise.all([
+        UserModel.countDocuments(),
+        ChatModel.countDocuments(),
+        // DAU/WAU/MAU — users active in last N days
+        UserModel.countDocuments({ lastActiveAt: { $gte: d1ago } }),
+        UserModel.countDocuments({ lastActiveAt: { $gte: d7ago } }),
+        UserModel.countDocuments({ lastActiveAt: { $gte: d30ago } }),
+        // Retention base: users created before window
+        UserModel.countDocuments({ createdAt: { $lte: d1ago } }),
+        UserModel.countDocuments({ createdAt: { $lte: d7ago } }),
+        UserModel.countDocuments({ createdAt: { $lte: d30ago } }),
+        // Retention returned: eligible users active within window
+        UserModel.countDocuments({ createdAt: { $lte: d1ago },  lastActiveAt: { $gte: d1ago } }),
+        UserModel.countDocuments({ createdAt: { $lte: d7ago },  lastActiveAt: { $gte: d7ago } }),
+        UserModel.countDocuments({ createdAt: { $lte: d30ago }, lastActiveAt: { $gte: d30ago } }),
+        // Language distribution
+        UserModel.aggregate([
+            { $group: { _id: "$lang", count: { $sum: 1 } } },
+            { $sort: { count: -1 } },
+            { $limit: 5 },
+        ]),
+        // Top referral sources
+        UserModel.aggregate([
+            { $match: { referralSource: { $ne: null } } },
+            { $group: { _id: "$referralSource", count: { $sum: 1 } } },
+            { $sort: { count: -1 } },
+            { $limit: 5 },
+        ]),
+        // Top VIP users by search count
+        UserModel.find({ searchCount: { $gt: 0 } })
+            .sort({ searchCount: -1 })
+            .limit(5)
+            .lean()
+            .select("firstName username searchCount"),
+    ]);
+
+    const pct = (n, d) => d > 0 ? ((n / d) * 100).toFixed(1) + "%" : "N/A";
+
+    const silentUsers = totalUsers - wau;
+    const activeRate  = pct(wau, totalUsers);
+
+    const langLines = langAgg.length
+        ? langAgg.map(l => ` ☆ ${l._id || "??"}: ${l.count}`).join("\n")
+        : " ☆ Sem dados";
+
+    const refLines = refAgg.length
+        ? refAgg.map(r => ` ☆ ${r._id}: ${r.count}`).join("\n")
+        : " ☆ Sem dados ainda";
+
+    const vipLines = topUsers.length
+        ? topUsers.map((u, i) => ` ${i + 1}. ${u.firstName || u.username || u._id} — ${u.searchCount} buscas`).join("\n")
+        : " ☆ Sem dados ainda";
+
+    const text =
+`──❑ 「 Bot Stats 」 ❑──
+
+👥 <b>Usuários</b>
+ ☆ Total: <code>${totalUsers}</code>
+ ☆ Grupos: <code>${totalChats}</code>
+ ☆ Silenciosos (sem uso em 7d): <code>${silentUsers}</code>
+
+📊 <b>Atividade</b>
+ ☆ DAU (hoje): <code>${dau}</code>
+ ☆ WAU (7 dias): <code>${wau}</code>
+ ☆ MAU (30 dias): <code>${mau}</code>
+ ☆ Taxa ativa (WAU/Total): <code>${activeRate}</code>
+
+🔁 <b>Retenção</b>
+ ☆ D1 — retornou em 24h: <code>${pct(d1Returned, d1Eligible)}</code> (${d1Returned}/${d1Eligible})
+ ☆ D7 — ativo em 7 dias: <code>${pct(d7Returned, d7Eligible)}</code> (${d7Returned}/${d7Eligible})
+ ☆ D30 — ativo em 30 dias: <code>${pct(d30Returned, d30Eligible)}</code> (${d30Returned}/${d30Eligible})
+
+🌐 <b>Top idiomas</b>
+${langLines}
+
+🔗 <b>Origem (referral)</b>
+${refLines}
+
+🏆 <b>Usuários VIP (mais buscas)</b>
+${vipLines}`;
+
+    bot.sendMessage(msg.chat.id, text, { parse_mode: "HTML" });
 });
 
-const groupId = process.env.groupId;
-
+// --- User save notification ---
 UserModel.on("save", (user) => {
-    const message = `#Climatologia #New_User
-  <b>User:</b> <a href="tg://user?id=${user.userID}">${user.firstName}</a>
-  <b>ID:</b> <code>${user.userID}</code>
-  <b>Username:</b> ${user.username ? `@${user.username}` : "Não informado"}`;
-    bot.sendMessage(groupId, message, { parse_mode: "HTML", reply_to_message_id: 38597 });
+    const message = `#Climatologia #New_User\n<b>User:</b> <a href="tg://user?id=${user.userID}">${user.firstName}</a>\n<b>ID:</b> <code>${user.userID}</code>\n<b>Username:</b> ${user.username ? `@${user.username}` : "N/A"}`;
+    bot.sendMessage(groupId, message, { parse_mode: "HTML" }).catch(() => {});
 });
 
-
-bot.onText(/\/start/, async (msg) => {
-    if (msg.chat.type !== "private") {
-        return;
-    }
-
+// --- /start ---
+bot.onText(/\/start(?:\s+(.+))?/, async (msg, match) => {
+    if (msg.chat.type !== "private") return;
     const chatId = msg.chat.id;
+    const referralParam = match[1] ? match[1].trim() : null;
 
     let user = await UserModel.findOne({ userID: msg.from.id });
     if (!user) {
@@ -269,1010 +422,494 @@ bot.onText(/\/start/, async (msg) => {
             firstName: msg.from.first_name,
             userID: msg.from.id,
             username: msg.from.username,
-            lang: "en",
+            lang: msg.from.language_code && i18n.getLocales().includes(msg.from.language_code) ? msg.from.language_code : "en",
+            createdAt: new Date(),
+            lastActiveAt: new Date(),
+            referralSource: referralParam,
         });
         await user.save();
     } else {
-        i18n.setLocale(user.lang);
+        await UserModel.findOneAndUpdate({ userID: msg.from.id }, { lastActiveAt: new Date() });
     }
 
-    bot.sendMessage(chatId, i18n.__("startMessage"), {
-        parse_mode: "markdown",
+    const locale = user.lang || "en";
+    bot.sendMessage(chatId, i18n.__({ phrase: "startMessage", locale }), {
+        parse_mode: "Markdown",
         disable_web_page_preview: true,
-        reply_markup: {
-            inline_keyboard: [
-                [
-                    {
-                        text: i18n.__("inline_psq"),
-                        switch_inline_query_current_chat: '',
-                    },
-                ],
-                [
-                    {
-                        text: i18n.__("help"),
-                        callback_data: "help",
-                    },
-                    {
-                        text: i18n.__("owner"),
-                        url: "https://t.me/Kylorensbot",
-                    },
-                ],
-                [
-                    {
-                        text: i18n.__("addGroup"),
-                        url: "https://t.me/climatologiabot?startgroup=true",
-                    }
-                ],
-                [
-                    {
-                        text: i18n.__("langMessage"),
-                        callback_data: "choose_language",
-                    },
-                    {
-                        text: "📦 Github",
-                        url: "https://github.com/leviobrabo/climatologiabot",
-                    }
-                ],
-            ],
-        },
+        reply_markup: buildStartKeyboard(locale),
     });
 });
 
+// --- Keyboard builders ---
+function buildStartKeyboard(locale) {
+    return {
+        inline_keyboard: [
+            [{ text: i18n.__({ phrase: "inline_psq", locale }), switch_inline_query_current_chat: "" }],
+            [
+                { text: i18n.__({ phrase: "help", locale }), callback_data: "help" },
+                { text: i18n.__({ phrase: "owner", locale }), url: "https://t.me/Kylorensbot" },
+            ],
+            [{ text: i18n.__({ phrase: "addGroup", locale }), url: "https://t.me/climatologiabot?startgroup=true" }],
+            [
+                { text: i18n.__({ phrase: "langMessage", locale }), callback_data: "choose_language" },
+                { text: "📦 Github", url: "https://github.com/leviobrabo/climatologiabot" },
+            ],
+        ],
+    };
+}
+
+function buildLangKeyboard(locale) {
+    return {
+        inline_keyboard: [
+            [
+                { text: "🇧🇷 Português", callback_data: "choose_portuguese" },
+                { text: "🇺🇸 English", callback_data: "choose_english" },
+                { text: "🇷🇺 Русский", callback_data: "choose_russian" },
+            ],
+            [
+                { text: "🇪🇸 Español", callback_data: "choose_spanish" },
+                { text: "🇫🇷 Français", callback_data: "choose_french" },
+                { text: "🇮🇳 हिन्दी", callback_data: "choose_hindi" },
+            ],
+            [
+                { text: "🇮🇹 Italiano", callback_data: "choose_italian" },
+                { text: "🇹🇷 Türkçe", callback_data: "choose_turkish" },
+                { text: "🇺🇦 Українська", callback_data: "choose_ukrainian" },
+            ],
+            [
+                { text: "🇩🇪 Deutsch", callback_data: "choose_german" },
+                { text: "🇸🇦 العربية", callback_data: "choose_arabic" },
+                { text: "🇮🇩 Bahasa", callback_data: "choose_indonesian" },
+            ],
+            [
+                { text: "🇮🇷 فارسی", callback_data: "choose_persian" },
+            ],
+            [{ text: i18n.__({ phrase: "back", locale }), callback_data: "back_to_start" }],
+        ],
+    };
+}
+
+const LANG_CHOICES = {
+    choose_portuguese: "pt",
+    choose_english: "en",
+    choose_russian: "ru",
+    choose_spanish: "es",
+    choose_french: "fr",
+    choose_hindi: "hi",
+    choose_italian: "it",
+    choose_turkish: "tr",
+    choose_ukrainian: "uk",
+    choose_german: "de",
+    choose_arabic: "ar",
+    choose_indonesian: "id",
+    choose_persian: "fa",
+};
+
+// --- Single consolidated callback_query handler ---
 bot.on("callback_query", async (callbackQuery) => {
-    if (callbackQuery.message.chat.type !== "private") {
-        return;
-    }
+    if (callbackQuery.message.chat.type !== "private") return;
 
     const chatId = callbackQuery.message.chat.id;
     const messageId = callbackQuery.message.message_id;
+    const userId = callbackQuery.from.id;
+    const data = callbackQuery.data;
 
-    if (callbackQuery.data === "help") {
-        await bot.editMessageText(i18n.__("help_message"), {
-            parse_mode: "markdown",
+    const user = await UserModel.findOne({ userID: userId });
+    const locale = user ? user.lang : "en";
+
+    if (data === "help") {
+        await bot.editMessageText(i18n.__({ phrase: "help_message", locale }), {
+            parse_mode: "Markdown",
             disable_web_page_preview: true,
             chat_id: chatId,
             message_id: messageId,
             reply_markup: {
                 inline_keyboard: [
+                    [{ text: i18n.__({ phrase: "inline_psq", locale }), switch_inline_query_current_chat: "" }],
                     [
-                        {
-                            text: i18n.__("inline_psq"),
-                            switch_inline_query_current_chat: '',
-                        },
+                        { text: i18n.__({ phrase: "support_group_button", locale }), url: "https://t.me/climatologiaofc" },
+                        { text: i18n.__({ phrase: "support_button", locale }), url: "https://t.me/kylorensbot" },
                     ],
-                    [
-                        {
-                            text: i18n.__("support_group_button"),
-                            url: "https://t.me/climatologiaofc",
-                        },
-                        {
-                            text: i18n.__("support_button"),
-                            url: "https://t.me/kylorensbot",
-                        },
-                    ],
-                    [
-                        {
-                            text: i18n.__("git_to_use"),
-                            url: "https://t.me/+2w5cw249tXkxMWUx",
-                        },
-                    ],
-                    [
-                        {
-                            text: i18n.__("back"),
-                            callback_data: "back_to_start",
-                        },
-                    ],
+                    [{ text: i18n.__({ phrase: "git_to_use", locale }), url: "https://t.me/+2w5cw249tXkxMWUx" }],
+                    [{ text: i18n.__({ phrase: "back", locale }), callback_data: "back_to_start" }],
                 ],
             },
-        });
-    }
-
-    if (callbackQuery.data === "choose_language") {
-        await bot.editMessageText(i18n.__("chooseLangMessage"), {
-            parse_mode: "markdown",
+        }).catch(() => {});
+    } else if (data === "choose_language") {
+        await bot.editMessageText(i18n.__({ phrase: "chooseLangMessage", locale }), {
+            parse_mode: "Markdown",
             disable_web_page_preview: true,
             chat_id: chatId,
             message_id: messageId,
-            reply_markup: {
-                inline_keyboard: [
-                    [
-                        {
-                            text: "🇧🇷 Português",
-                            callback_data: "choose_portuguese",
-                        },
-                        {
-                            text: "🇺🇸 English",
-                            callback_data: "choose_english",
-                        },
-                        {
-                            text: "🇷🇺 Русский",
-                            callback_data: "choose_russian",
-                        },
-                    ],
-                    [
-                        {
-                            text: "🇪🇸 Español",
-                            callback_data: "choose_spanish",
-                        },
-                        {
-                            text: "🇫🇷 Français",
-                            callback_data: "choose_french",
-                        },
-                        {
-                            text: "🇮🇳 हिन्दी",
-                            callback_data: "choose_hindi",
-                        },
-                    ],
-                    [
-                        {
-                            text: "🇮🇹 Italiano",
-                            callback_data: "choose_italian",
-                        },
-                        {
-                            text: "🇹🇷 Türkçe",
-                            callback_data: "choose_turkish",
-                        },
-                        {
-                            text: "🇺🇦 Українська",
-                            callback_data: "choose_ukrainian",
-                        },
-                    ],
-                    [
-                        {
-                            text: i18n.__("back"),
-                            callback_data: "back_to_start",
-                        },
-                    ],
-                ],
-            },
-        });
-    } else if (callbackQuery.data === "choose_portuguese") {
-        const user = await UserModel.findOneAndUpdate(
-            { userID: callbackQuery.from.id },
-            { lang: "pt" },
-            { new: true }
-        );
-        i18n.setLocale(user.lang);
-
-        await bot.editMessageText(i18n.__("langChangedMessage"), {
+            reply_markup: buildLangKeyboard(locale),
+        }).catch(() => {});
+    } else if (LANG_CHOICES[data]) {
+        const newLang = LANG_CHOICES[data];
+        await UserModel.findOneAndUpdate({ userID: userId }, { lang: newLang });
+        await bot.editMessageText(i18n.__({ phrase: "langChangedMessage", locale: newLang }), {
             chat_id: chatId,
             message_id: messageId,
             reply_markup: {
-                inline_keyboard: [
-                    [
-                        {
-                            text: i18n.__("back"),
-                            callback_data: "back_to_start",
-                        },
-                    ],
-                ],
+                inline_keyboard: [[
+                    { text: i18n.__({ phrase: "back", locale: newLang }), callback_data: "back_to_start" },
+                ]],
             },
-        });
-    } else if (callbackQuery.data === "choose_english") {
-        const user = await UserModel.findOneAndUpdate(
-            { userID: callbackQuery.from.id },
-            { lang: "en" },
-            { new: true }
-        );
-        i18n.setLocale(user.lang);
-
-        await bot.editMessageText(i18n.__("langChangedMessage"), {
+        }).catch(() => {});
+    } else if (data === "back_to_start") {
+        await bot.editMessageText(i18n.__({ phrase: "startMessage", locale }), {
+            chat_id: chatId,
+            message_id: messageId,
+            parse_mode: "Markdown",
+            disable_web_page_preview: true,
+            reply_markup: buildStartKeyboard(locale),
+        }).catch(() => {});
+    } else if (data === "commands" && is_dev(userId)) {
+        const cmdList = [
+            "/stats - Bot statistics (users & groups)",
+            "/broadcast /bc - Send message to all users",
+            "/ping - Check bot latency & uptime",
+            "/sendgp - Forward message to all groups",
+            "/grupos - List all groups (paginated)",
+        ].join("\n");
+        await bot.editMessageText(`<b>Developer Commands:</b>\n\n${cmdList}`, {
+            parse_mode: "HTML",
             chat_id: chatId,
             message_id: messageId,
             reply_markup: {
-                inline_keyboard: [
-                    [
-                        {
-                            text: i18n.__("back"),
-                            callback_data: "back_to_start",
-                        },
-                    ],
-                ],
+                inline_keyboard: [[{ text: "⬅️ Back", callback_data: "back_dev" }]],
             },
-        });
-    } else if (callbackQuery.data === "choose_russian") {
-        const user = await UserModel.findOneAndUpdate(
-            { userID: callbackQuery.from.id },
-            { lang: "ru" },
-            { new: true }
-        );
-        i18n.setLocale(user.lang);
-
-        await bot.editMessageText(i18n.__("langChangedMessage"), {
+        }).catch(() => {});
+    } else if (data === "back_dev" && is_dev(userId)) {
+        const firstName = callbackQuery.from.first_name;
+        await bot.editMessageText(`Olá, <b>${firstName}</b>! Painel do desenvolvedor 🧑‍💻`, {
+            parse_mode: "HTML",
             chat_id: chatId,
             message_id: messageId,
-            reply_markup: {
-                inline_keyboard: [
-                    [
-                        {
-                            text: i18n.__("back"),
-                            callback_data: "back_to_start",
-                        },
-                    ],
-                ],
-            },
-        });
-    } else if (callbackQuery.data === "choose_spanish") {
-        const user = await UserModel.findOneAndUpdate(
-            { userID: callbackQuery.from.id },
-            { lang: "es" },
-            { new: true }
-        );
-        i18n.setLocale(user.lang);
-
-        await bot.editMessageText(i18n.__("langChangedMessage"), {
-            chat_id: chatId,
-            message_id: messageId,
-            reply_markup: {
-                inline_keyboard: [
-                    [
-                        {
-                            text: i18n.__("back"),
-                            callback_data: "back_to_start",
-                        },
-                    ],
-                ],
-            },
-        });
-    } else if (callbackQuery.data === "choose_french") {
-        const user = await UserModel.findOneAndUpdate(
-            { userID: callbackQuery.from.id },
-            { lang: "fr" },
-            { new: true }
-        );
-        i18n.setLocale(user.lang);
-
-        await bot.editMessageText(i18n.__("langChangedMessage"), {
-            chat_id: chatId,
-            message_id: messageId,
-            reply_markup: {
-                inline_keyboard: [
-                    [
-                        {
-                            text: i18n.__("back"),
-                            callback_data: "back_to_start",
-                        },
-                    ],
-                ],
-            },
-        });
-    } else if (callbackQuery.data === "choose_hindi") {
-        const user = await UserModel.findOneAndUpdate(
-            { userID: callbackQuery.from.id },
-            { lang: "hi" },
-            { new: true }
-        );
-        i18n.setLocale(user.lang);
-
-        await bot.editMessageText(i18n.__("langChangedMessage"), {
-            chat_id: chatId,
-            message_id: messageId,
-            reply_markup: {
-                inline_keyboard: [
-                    [
-                        {
-                            text: i18n.__("back"),
-                            callback_data: "back_to_start",
-                        },
-                    ],
-                ],
-            },
-        });
-    } else if (callbackQuery.data === "choose_italian") {
-        const user = await UserModel.findOneAndUpdate(
-            { userID: callbackQuery.from.id },
-            { lang: "it" },
-            { new: true }
-        );
-        i18n.setLocale(user.lang);
-
-        await bot.editMessageText(i18n.__("langChangedMessage"), {
-            chat_id: chatId,
-            message_id: messageId,
-            reply_markup: {
-                inline_keyboard: [
-                    [
-                        {
-                            text: i18n.__("back"),
-                            callback_data: "back_to_start",
-                        },
-                    ],
-                ],
-            },
-        });
-    } else if (callbackQuery.data === "choose_turkish") {
-        const user = await UserModel.findOneAndUpdate(
-            { userID: callbackQuery.from.id },
-            { lang: "tr" },
-            { new: true }
-        );
-        i18n.setLocale(user.lang);
-
-        await bot.editMessageText(i18n.__("langChangedMessage"), {
-            chat_id: chatId,
-            message_id: messageId,
-            reply_markup: {
-                inline_keyboard: [
-                    [
-                        {
-                            text: i18n.__("back"),
-                            callback_data: "back_to_start",
-                        },
-                    ],
-                ],
-            },
-        });
-    } else if (callbackQuery.data === "choose_ukrainian") {
-        const user = await UserModel.findOneAndUpdate(
-            { userID: callbackQuery.from.id },
-            { lang: "uk" },
-            { new: true }
-        );
-        i18n.setLocale(user.lang);
-
-        await bot.editMessageText(i18n.__("langChangedMessage"), {
-            chat_id: chatId,
-            message_id: messageId,
-            reply_markup: {
-                inline_keyboard: [
-                    [
-                        {
-                            text: i18n.__("back"),
-                            callback_data: "back_to_start",
-                        },
-                    ],
-                ],
-            },
-        });
-    } else if (callbackQuery.data === "back_to_start") {
-        await bot.editMessageText(i18n.__("startMessage"), {
-            chat_id: chatId,
-            message_id: messageId,
-            parse_mode: "markdown",
             disable_web_page_preview: true,
             reply_markup: {
                 inline_keyboard: [
-                    [
-                        {
-                            text: i18n.__("inline_psq"),
-                            switch_inline_query_current_chat: '',
-                        },
-                    ],
-                    [
-                        {
-                            text: i18n.__("help"),
-                            callback_data: "help",
-                        },
-                        {
-                            text: i18n.__("owner"),
-                            url: "https://t.me/Kylorensbot",
-                        },
-                    ],
-                    [
-                        {
-                            text: i18n.__("addGroup"),
-                            url: "https://t.me/climatologiabot?startgroup=true",
-                        }
-                    ],
-                    [
-                        {
-                            text: i18n.__("langMessage"),
-                            callback_data: "choose_language",
-                        },
-                        {
-                            text: "📦 Github",
-                            url: "https://github.com/leviobrabo/climatologiabot",
-                        }
-                    ],
+                    [{ text: "📬 Canal Oficial", url: "https://t.me/climatologiaofc" }],
+                    [{ text: "🗃 Comandos", callback_data: "commands" }],
                 ],
             },
-        });
+        }).catch(() => {});
+    } else if (data.startsWith("groups:") && is_dev(userId)) {
+        const chunks = groupsCache.get(userId);
+        if (!chunks) return bot.answerCallbackQuery(callbackQuery.id).catch(() => {});
+        const index = Number(data.split(":")[1]);
+        if (index < 0 || index >= chunks.length) return bot.answerCallbackQuery(callbackQuery.id).catch(() => {});
+        await bot.editMessageText(chunks[index], {
+            chat_id: chatId,
+            message_id: messageId,
+            parse_mode: "HTML",
+            reply_markup: {
+                inline_keyboard: [[
+                    { text: `<< ${index + 1}`, callback_data: `groups:${index - 1}` },
+                    { text: `>> ${index + 2}`, callback_data: `groups:${index + 1}` },
+                ]],
+            },
+        }).catch(() => {});
+        await bot.answerCallbackQuery(callbackQuery.id).catch(() => {});
     }
 });
 
-bot.onText(/\/lang/, (msg) => {
+// --- /lang ---
+bot.onText(/\/lang/, async (msg) => {
     const chatId = msg.chat.id;
-
     if (msg.chat.type === "group" || msg.chat.type === "supergroup") {
-        bot.sendMessage(chatId, i18n.__("pv_message_lang"), {
+        bot.sendMessage(chatId, i18n.__({ phrase: "pv_message_lang", locale: "en" }), {
             reply_markup: {
-                inline_keyboard: [
-                    [
-                        {
-                            text: i18n.__("pv_message_lang_button"),
-                            url: "https://t.me/climatologiabot?start=lang",
-                        },
-                    ],
-                ],
+                inline_keyboard: [[
+                    { text: i18n.__({ phrase: "pv_message_lang_button", locale: "en" }), url: "https://t.me/climatologiabot?start=lang" },
+                ]],
             },
         });
         return;
     }
-
-    bot.sendMessage(chatId, i18n.__("chooseLanguage"), {
-        parse_mode: "markdown",
+    const locale = await getUserLanguage(msg.from.id);
+    bot.sendMessage(chatId, i18n.__({ phrase: "chooseLanguage", locale }), {
+        parse_mode: "Markdown",
         disable_web_page_preview: true,
-        reply_markup: {
-            inline_keyboard: [
-                [
-                    {
-                        text: "🇧🇷 Português",
-                        callback_data: "choose_portuguese",
-                    },
-                    {
-                        text: "🇺🇸 English",
-                        callback_data: "choose_english",
-                    },
-                    {
-                        text: "🇷🇺 Русский",
-                        callback_data: "choose_russian",
-                    },
-                ],
-                [
-                    {
-                        text: "🇪🇸 Español",
-                        callback_data: "choose_spanish",
-                    },
-                    {
-                        text: "🇫🇷 Français",
-                        callback_data: "choose_french",
-                    },
-                    {
-                        text: "🇮🇳 हिन्दी",
-                        callback_data: "choose_hindi",
-                    },
-                ],
-                [
-                    {
-                        text: "🇮🇹 Italiano",
-                        callback_data: "choose_italian",
-                    },
-                    {
-                        text: "🇹🇷 Türkçe",
-                        callback_data: "choose_turkish",
-                    },
-                    {
-                        text: "🇺🇦 Українська",
-                        callback_data: "choose_ukrainian",
-                    },
-                ],
-                [
-                    {
-                        text: i18n.__("startlanguptdate"),
-                        callback_data: "back_to_start",
-                    },
-                ],
-            ],
-        },
+        reply_markup: buildLangKeyboard(locale),
     });
 });
 
-bot.onText(/\/help/, (msg) => {
-    if (msg.chat.type !== "private") {
-        return;
-    }
+// --- /help ---
+bot.onText(/\/help/, async (msg) => {
+    if (msg.chat.type !== "private") return;
     const chatId = msg.chat.id;
-
-    const helpMessage = i18n.__("help_message");
-
+    const locale = await getUserLanguage(msg.from.id);
     bot.sendPhoto(
         chatId,
         "https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/f914dc21-b453-4629-8710-ebf4ec304e49/d8gymea-76b549b0-5202-4789-899a-9c5f835e8fd8.png?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7InBhdGgiOiJcL2ZcL2Y5MTRkYzIxLWI0NTMtNDYyOS04NzEwLWViZjRlYzMwNGU0OVwvZDhneW1lYS03NmI1NDliMC01MjAyLTQ3ODktODk5YS05YzVmODM1ZThmZDgucG5nIn1dXSwiYXVkIjpbInVybjpzZXJ2aWNlOmZpbGUuZG93bmxvYWQiXX0.tQYStAnWtQo_s7raGbX_T9CVmujGRY_blrcI68suz5E",
         {
-            caption: helpMessage,
-            parse_mode: "markdown",
+            caption: i18n.__({ phrase: "help_message", locale }),
+            parse_mode: "Markdown",
             disable_web_page_preview: true,
             reply_markup: {
-                inline_keyboard: [
-                    [
-                        {
-                            text: i18n.__("support_group_button"),
-                            url: "https://t.me/climatologiaofc",
-                        },
-                        {
-                            text: i18n.__("support_button"),
-                            url: "https://t.me/kylorensbot",
-                        },
-                    ],
-                ],
+                inline_keyboard: [[
+                    { text: i18n.__({ phrase: "support_group_button", locale }), url: "https://t.me/climatologiaofc" },
+                    { text: i18n.__({ phrase: "support_button", locale }), url: "https://t.me/kylorensbot" },
+                ]],
             },
         }
     );
 });
 
+// --- new_chat_members ---
 bot.on("new_chat_members", async (msg) => {
     const chatId = msg.chat.id;
     const chatName = msg.chat.title;
 
     try {
-        const chat = await ChatModel.findOne({ chatId: chatId });
-
-        if (chat) {
-            console.log(
-                `Grupo ${chatName} (${chatId}) já existe no banco de dados`
-            );
-        } else {
-            const newChat = await ChatModel.create({ chatId, chatName });
-            console.log(
-                `Grupo ${newChat.chatName} (${newChat.chatId}) adicionado ao banco de dados`
-            );
-
-            const botUser = await bot.getMe();
-            const newMembers = msg.new_chat_members.filter(
-                (member) => member.id === botUser.id
-            );
-            if (msg.chat.username) {
-                chatusername = `@${msg.chat.username}`;
-            } else {
-                chatusername = "Private Group";
-            }
-
-            if (newMembers.length > 0) {
-                const message = `#Climatologiabot #New_Group
-            <b>Group:</b> ${chatName}
-            <b>ID:</b> <code>${chatId}</code>
-            <b>Link:</b> ${chatusername}`;
-                bot.sendMessage(groupId, message, { parse_mode: "HTML", reply_to_message_id: 38597 }).catch(
-                    (error) => {
-                        console.error(
-                            `Erro ao enviar mensagem para o grupo ${groupId}: ${error}`
-                        );
-                    }
-                );
-            }
-
-            bot.sendMessage(
-                chatId,
-                "(🇧🇷) Olá, meu nome é Janna! Obrigado por me adicionado em seu grupo. Eu sou bot de previsão do tempo, para usar digite @climatologiabot cidade.\n\n(🇺🇸)Hello, my name is Janna! Thanks for adding me to your group. I'm a weather forecast bot, to use type @climatologiabot city.",
-                {
-                    reply_markup: {
-                        inline_keyboard: [
-                            [
-                                {
-                                    text: "Visite nosso canal",
-                                    url: "https://t.me/climatologiaofc",
-                                },
-                                {
-                                    text: "Relate bugs",
-                                    url: "https://t.me/kylorensbot",
-                                },
-                            ],
-                        ],
-                    },
-                }
-            );
+        const existing = await ChatModel.findOne({ chatId });
+        if (!existing) {
+            await ChatModel.create({ chatId, chatName });
         }
-        const developerMembers = msg.new_chat_members.filter(
-            (member) => member.is_bot === false && is_dev(member.id)
-        );
 
-        if (developerMembers.length > 0) {
-            const message1 = `👨‍💻 <b>ᴜᴍ ᴅᴏs ᴍᴇᴜs ᴅᴇsᴇɴᴠᴏʟᴠᴇᴅᴏʀᴇs ᴇɴᴛʀᴏᴜ ɴᴏ ɢʀᴜᴘᴏ</b> <a href="tg://user?id=${developerMembers[0].id}">${developerMembers[0].first_name}</a> 😎👍`;
-            bot.sendMessage(chatId, message1, { parse_mode: "HTML" }).catch(
-                (error) => {
-                    console.error(
-                        `Erro ao enviar mensagem para o grupo ${chatId}: ${error}`
-                    );
-                }
-            );
+        const botUser = await bot.getMe();
+        const botJoined = msg.new_chat_members.some(m => m.id === botUser.id);
+        if (botJoined) {
+            const chatusername = msg.chat.username ? `@${msg.chat.username}` : "Private Group";
+            bot.sendMessage(groupId, `#Climatologiabot #New_Group\n<b>Group:</b> ${chatName}\n<b>ID:</b> <code>${chatId}</code>\n<b>Link:</b> ${chatusername}`, {
+                parse_mode: "HTML",
+            }).catch(() => {});
+            bot.sendMessage(chatId, "(🇧🇷) Olá! Sou Janna, bot de previsão do tempo. Use @climatologiabot cidade.\n\n(🇺🇸) Hello! I'm Janna, weather bot. Use @climatologiabot city.", {
+                reply_markup: {
+                    inline_keyboard: [[
+                        { text: "Canal Oficial", url: "https://t.me/climatologiaofc" },
+                        { text: "Suporte", url: "https://t.me/kylorensbot" },
+                    ]],
+                },
+            });
+        }
+
+        const devMembers = msg.new_chat_members.filter(m => !m.is_bot && is_dev(m.id));
+        if (devMembers.length > 0) {
+            bot.sendMessage(chatId, `👨‍💻 <b>Developer</b> <a href="tg://user?id=${devMembers[0].id}">${devMembers[0].first_name}</a> joined! 😎`, {
+                parse_mode: "HTML",
+            }).catch(() => {});
         }
     } catch (err) {
         console.error(err);
     }
 });
 
+// --- left_chat_member ---
 bot.on("left_chat_member", async (msg) => {
     const botUser = await bot.getMe();
-    if (msg.left_chat_member.id === botUser.id) {
-        console.log("Bot left the group!");
-
-        try {
-            const chatId = msg.chat.id;
-            const chat = await ChatModel.findOneAndDelete({ chatId });
-            console.log(
-                `Grupo ${chat.chatName} (${chat.chatId}) removido do banco de dados`
-            );
-        } catch (err) {
-            console.error(err);
-        }
+    if (msg.left_chat_member.id !== botUser.id) return;
+    try {
+        const chat = await ChatModel.findOneAndDelete({ chatId: msg.chat.id });
+        if (chat) console.log(`Removed group: ${chat.chatName} (${chat.chatId})`);
+    } catch (err) {
+        console.error(err);
     }
 });
 
-
-function timeFormatter(seconds) {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = Math.floor(seconds % 60);
-
-    const hoursFormatted = String(hours).padStart(2, "0");
-    const minutesFormatted = String(minutes).padStart(2, "0");
-    const secondsFormatted = String(secs).padStart(2, "0");
-
-    return `${hoursFormatted}:${minutesFormatted}:${secondsFormatted}`;
-}
-
+// --- /ping ---
 bot.onText(/\/ping/, async (msg) => {
-    const start = new Date();
+    const start = Date.now();
     const replied = await bot.sendMessage(msg.chat.id, "𝚙𝚘𝚗𝚐!");
-    const end = new Date();
-    const m_s = end - start;
-    const uptime = process.uptime();
-    const uptime_formatted = timeFormatter(uptime);
-    await bot.editMessageText(
-        `𝚙𝚒𝚗𝚐: \`${m_s}𝚖𝚜\`\n𝚞𝚙𝚝𝚒𝚖𝚎: \`${uptime_formatted}\``,
-        {
-            chat_id: replied.chat.id,
-            message_id: replied.message_id,
-            parse_mode: "Markdown",
-        }
-    );
-});
-
-bot.onText(/^(\/broadcast|\/bc)\b/, async (msg, match) => {
-    const user_id = msg.from.id;
-    if (!(await is_dev(user_id))) {
-        return;
-    }
-    if (msg.chat.type !== "private") {
-        return;
-    }
-
-    const query = match.input.substring(match[0].length).trim();
-    if (!query) {
-        return bot.sendMessage(
-            msg.chat.id,
-            "<i>I need text to broadcast.</i>",
-            { parse_mode: "HTML" }
-        );
-    }
-    const sentMsg = await bot.sendMessage(msg.chat.id, "<i>Processing...</i>", {
-        parse_mode: "HTML",
+    const ms = Date.now() - start;
+    await bot.editMessageText(`𝚙𝚒𝚗𝚐: \`${ms}𝚖𝚜\`\n𝚞𝚙𝚝𝚒𝚖𝚎: \`${timeFormatter(process.uptime())}\``, {
+        chat_id: replied.chat.id,
+        message_id: replied.message_id,
+        parse_mode: "Markdown",
     });
+});
+
+// --- /broadcast ---
+bot.onText(/^(\/broadcast|\/bc)\b/, async (msg, match) => {
+    if (!is_dev(msg.from.id) || msg.chat.type !== "private") return;
+    const query = match.input.substring(match[0].length).trim();
+    if (!query) return bot.sendMessage(msg.chat.id, "<i>I need text to broadcast.</i>", { parse_mode: "HTML" });
+
+    const sentMsg = await bot.sendMessage(msg.chat.id, "<i>Processing...</i>", { parse_mode: "HTML" });
     const web_preview = query.startsWith("-d");
-    const query_ = web_preview ? query.substring(2).trim() : query;
-    const ulist = await UserModel.find().lean().select("user_id");
-    let sucess_br = 0;
-    let no_sucess = 0;
-    let block_num = 0;
-    for (const { user_id } of ulist) {
+    const text = web_preview ? query.substring(2).trim() : query;
+    const users = await UserModel.find().lean().select("userID");
+    let success = 0, failed = 0, blocked = 0;
+
+    for (const u of users) {
         try {
-            await bot.sendMessage(user_id, query_, {
-                disable_web_page_preview: !web_preview,
-                parse_mode: "HTML",
-            });
-            sucess_br += 1;
+            await bot.sendMessage(u.userID, text, { disable_web_page_preview: !web_preview, parse_mode: "HTML" });
+            success++;
         } catch (err) {
-            if (
-                err.response &&
-                err.response.body &&
-                err.response.body.error_code === 403
-            ) {
-                block_num += 1;
-            } else {
-                no_sucess += 1;
-            }
+            if (err.response?.body?.error_code === 403) blocked++;
+            else failed++;
         }
     }
+
     await bot.editMessageText(
-        `
-  ╭─❑ 「 <b>Broadcast Completed</b> 」 ❑──
-  │- <i>Total Users:</i> \`${ulist.length}\`
-  │- <i>Successful:</i> \`${sucess_br}\`
-  │- <i>Blocked:</i> \`${block_num}\`
-  │- <i>Failed:</i> \`${no_sucess}\`
-  ╰❑
-    `,
-        {
-            chat_id: sentMsg.chat.id,
-            message_id: sentMsg.message_id,
-            parse_mode: "HTML",
-        }
+        `╭─❑ 「 <b>Broadcast Completed</b> 」 ❑──\n│- <i>Total:</i> <code>${users.length}</code>\n│- <i>OK:</i> <code>${success}</code>\n│- <i>Blocked:</i> <code>${blocked}</code>\n│- <i>Failed:</i> <code>${failed}</code>\n╰❑`,
+        { chat_id: sentMsg.chat.id, message_id: sentMsg.message_id, parse_mode: "HTML" }
     );
 });
 
-bot.onText(/\/dev/, async (message) => {
-    const userId = message.from.id;
-    if (message.chat.type !== "private") {
-        return;
-    }
-    const firstName = message.from.first_name;
-    const message_start_dev = `Olá, <b>${firstName}</b>! Você é um dos desenvolvedores 🧑‍💻\n\nVocê está no painel do desenvolvedor da Janna, então aproveite a responsabilidade e use os comandos com consciências`;
-    const options_start_dev = {
+// --- /dev ---
+bot.onText(/\/dev/, (msg) => {
+    if (msg.chat.type !== "private") return;
+    const userId = msg.from.id;
+    const firstName = msg.from.first_name;
+    if (!is_dev(userId)) return bot.sendMessage(msg.chat.id, "Você não é desenvolvedor.");
+    bot.sendMessage(userId, `Olá, <b>${firstName}</b>! Painel do desenvolvedor 🧑‍💻\n\nUse os comandos com responsabilidade.`, {
         parse_mode: "HTML",
         disable_web_page_preview: true,
         reply_markup: {
             inline_keyboard: [
-                [
-                    {
-                        text: "📬 Canal Oficial",
-                        url: "https://t.me/climatologiaofc",
-                    },
-                ],
-                [
-                    {
-                        text: "🗃 Lista de para desenvolvedores",
-                        callback_data: "commands",
-                    },
-                ],
+                [{ text: "📬 Canal Oficial", url: "https://t.me/climatologiaofc" }],
+                [{ text: "🗃 Comandos", callback_data: "commands" }],
             ],
         },
-    };
-    bot.on("callback_query", async (callbackQuery) => {
-        if (callbackQuery.message.chat.type !== "private") {
-            return;
-        }
-        const chatId = callbackQuery.message.chat.id;
-        const messageId = callbackQuery.message.message_id;
-
-        if (callbackQuery.data === "commands") {
-            const commands = [
-                "/stats - Estatística de grupos, usuarios e mensagens enviadas",
-                "/broadcast ou /bc - envia mensagem para todos usuários",
-                "/ping - veja a latência da VPS",
-                "/sendgp - encaminha msg para grupos",
-            ];
-            await bot.editMessageText(
-                "<b>Lista de Comandos:</b> \n\n" + commands.join("\n"),
-                {
-                    parse_mode: "HTML",
-                    disable_web_page_preview: true,
-                    chat_id: chatId,
-                    message_id: messageId,
-                    reply_markup: {
-                        inline_keyboard: [
-                            [
-                                {
-                                    text: "⬅️ Voltar",
-                                    callback_data: "back_to_start",
-                                },
-                            ],
-                        ],
-                    },
-                }
-            );
-        } else if (callbackQuery.data === "back_to_start") {
-            await bot.editMessageText(message_start_dev, {
-                parse_mode: "HTML",
-                chat_id: chatId,
-                message_id: messageId,
-                disable_web_page_preview: true,
-                reply_markup: options_start_dev.reply_markup,
-            });
-        }
     });
-    if (is_dev(userId)) {
-        bot.sendMessage(userId, message_start_dev, options_start_dev);
-    } else {
-        bot.sendMessage(message.chat.id, "Você não é desenvolvedor");
-    }
 });
 
-const channelStatusId = process.env.channelStatusId;
-
+// --- Status cron ---
 async function sendStatus() {
-    const start = new Date();
-    const replied = await bot.sendMessage(channelStatusId, "Bot is ON");
-    const end = new Date();
-    const m_s = end - start;
-    const uptime = process.uptime();
-    const uptime_formatted = timeFormatter(uptime);
-    const numUsers = await UserModel.countDocuments();
-    const numChats = await ChatModel.countDocuments();
-    await bot.editMessageText(
-        `#Climatologiabot #Status\n\nStatus: ON\nPing: \`${m_s}ms\`\nUptime: \`${uptime_formatted}\`\nUsers: \`${numUsers}\`\nChats: \`${numChats}\``,
-        {
-            chat_id: replied.chat.id,
-            message_id: replied.message_id,
-            parse_mode: "Markdown",
-        }
-    );
-}
-
-function timeFormatter(seconds) {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = Math.floor(seconds % 60);
-
-    const hoursFormatted = String(hours).padStart(2, "0");
-    const minutesFormatted = String(minutes).padStart(2, "0");
-    const secondsFormatted = String(secs).padStart(2, "0");
-
-    return `${hoursFormatted}:${minutesFormatted}:${secondsFormatted}`;
-}
-
-const job = new CronJob(
-    "00 12 * * *",
-    sendStatus,
-    null,
-    true,
-    "America/Sao_Paulo"
-);
-
-bot.onText(/^\/grupos/, async (message) => {
-    const user_id = message.from.id;
-    if (!(await is_dev(user_id))) {
-        return;
-    }
-    if (message.chat.type !== "private") {
-        return;
-    }
-
+    if (!channelStatusId) return;
     try {
-        const chats = await ChatModel.find().sort({ chatId: 1 });
-
-        let contador = 1;
-        let chunkSize = 3900 - message.text.length;
-        let messageChunks = [];
-        let currentChunk = "";
-
-        for (let chat of chats) {
-            if (chat.chatId < 0) {
-                let groupMessage = `<b>${contador}:</b> <b>Group=</b> ${chat.chatName} || <b>ID:</b> <code>${chat.chatId}</code>\n`;
-                if (currentChunk.length + groupMessage.length > chunkSize) {
-                    messageChunks.push(currentChunk);
-                    currentChunk = "";
-                }
-                currentChunk += groupMessage;
-                contador++;
-            }
-        }
-        messageChunks.push(currentChunk);
-
-        let index = 0;
-
-        const markup = (index) => {
-            return {
-                reply_markup: {
-                    inline_keyboard: [
-                        [
-                            {
-                                text: `<< ${index + 1}`,
-                                callback_data: `groups:${index - 1}`,
-                                disabled: index === 0,
-                            },
-                            {
-                                text: `>> ${index + 2}`,
-                                callback_data: `groups:${index + 1}`,
-                                disabled: index === messageChunks.length - 1,
-                            },
-                        ],
-                    ],
-                },
-                parse_mode: "HTML",
-            };
-        };
-
-        await bot.sendMessage(
-            message.chat.id,
-            messageChunks[index],
-            markup(index)
+        const start = Date.now();
+        const msg = await bot.sendMessage(channelStatusId, "Bot is ON");
+        const ms = Date.now() - start;
+        const numUsers = await UserModel.countDocuments();
+        const numChats = await ChatModel.countDocuments();
+        await bot.editMessageText(
+            `#Climatologiabot #Status\n\nStatus: ON\nPing: \`${ms}ms\`\nUptime: \`${timeFormatter(process.uptime())}\`\nUsers: \`${numUsers}\`\nChats: \`${numChats}\``,
+            { chat_id: msg.chat.id, message_id: msg.message_id, parse_mode: "Markdown" }
         );
+    } catch (err) {
+        console.error("sendStatus error:", err.message);
+    }
+}
 
-        bot.on("callback_query", async (query) => {
-            if (query.data.startsWith("groups:")) {
-                index = Number(query.data.split(":")[1]);
-                if (
-                    markup(index).reply_markup &&
-                    markup(index).reply_markup.inline_keyboard
-                ) {
-                    markup(index).reply_markup.inline_keyboard[0][0].disabled =
-                        index === 0;
-                    markup(index).reply_markup.inline_keyboard[0][1].disabled =
-                        index === messageChunks.length - 1;
-                }
-                await bot.editMessageText(messageChunks[index], {
-                    chat_id: query.message.chat.id,
-                    message_id: query.message.message_id,
-                    ...markup(index),
-                });
-                await bot.answerCallbackQuery(query.id);
+const job = new CronJob("00 12 * * *", sendStatus, null, true, "America/Sao_Paulo");
+
+// --- /grupos ---
+bot.onText(/^\/grupos/, async (msg) => {
+    if (!is_dev(msg.from.id) || msg.chat.type !== "private") return;
+    try {
+        const chats = await ChatModel.find({ chatId: { $lt: 0 } }).sort({ chatId: 1 });
+        const chunkSize = 3800;
+        const chunks = [];
+        let current = "";
+
+        chats.forEach((chat, i) => {
+            const line = `<b>${i + 1}:</b> ${chat.chatName} | <code>${chat.chatId}</code>\n`;
+            if (current.length + line.length > chunkSize) {
+                chunks.push(current);
+                current = "";
             }
+            current += line;
         });
-    } catch (error) {
-        console.error(error);
+        if (current) chunks.push(current);
+        if (!chunks.length) return bot.sendMessage(msg.chat.id, "No groups found.");
+
+        groupsCache.set(msg.from.id, chunks);
+        await bot.sendMessage(msg.chat.id, chunks[0], {
+            parse_mode: "HTML",
+            reply_markup: {
+                inline_keyboard: [[
+                    { text: "<< 1", callback_data: "groups:-1" },
+                    { text: ">> 2", callback_data: "groups:1" },
+                ]],
+            },
+        });
+    } catch (err) {
+        console.error(err);
     }
 });
 
+// --- /sendgp ---
 bot.onText(/\/sendgp/, async (msg, match) => {
-    const user_id = msg.from.id;
-    if (!(await is_dev(user_id))) {
-        return;
-    }
-    if (msg.chat.type !== "private") {
-        return;
-    }
-
-    const sentMsg = await bot.sendMessage(msg.chat.id, "<i>Processing...</i>", {
-        parse_mode: "HTML",
-    });
-    const web_preview = match.input.startsWith("-d");
-    const query = web_preview ? match.input.substring(6).trim() : match.input;
-    const ulist = await ChatModel.find().lean().select("chatId");
-    let success_br = 0;
-    let no_success = 0;
-    let block_num = 0;
+    if (!is_dev(msg.from.id) || msg.chat.type !== "private") return;
+    const sentMsg = await bot.sendMessage(msg.chat.id, "<i>Processing...</i>", { parse_mode: "HTML" });
+    const text = match.input.replace(/^\/sendgp\s*/, "").trim();
+    const groups = await ChatModel.find().lean().select("chatId");
+    let success = 0, failed = 0, blocked = 0;
 
     if (msg.reply_to_message) {
-        const replyMsg = msg.reply_to_message;
-        for (const { chatId } of ulist) {
+        const reply = msg.reply_to_message;
+        for (const { chatId } of groups) {
             try {
-                await bot.forwardMessage(
-                    chatId,
-                    replyMsg.chat.id,
-                    replyMsg.message_id
-                );
-                success_br += 1;
+                await bot.forwardMessage(chatId, reply.chat.id, reply.message_id);
+                success++;
             } catch (err) {
-                if (
-                    err.response &&
-                    err.response.body &&
-                    err.response.body.error_code === 403
-                ) {
-                    block_num += 1;
-                } else {
-                    no_success += 1;
-                }
+                if (err.response?.body?.error_code === 403) blocked++;
+                else failed++;
             }
         }
     } else {
-        for (const { chatId } of ulist) {
+        for (const { chatId } of groups) {
             try {
-                await bot.sendMessage(chatId, query, {
-                    disable_web_page_preview: !web_preview,
-                    parse_mode: "HTML",
-                    reply_to_message_id: msg.message_id,
-                });
-                success_br += 1;
+                await bot.sendMessage(chatId, text, { parse_mode: "HTML" });
+                success++;
             } catch (err) {
-                if (
-                    err.response &&
-                    err.response.body &&
-                    err.response.body.error_code === 403
-                ) {
-                    block_num += 1;
-                } else {
-                    no_success += 1;
-                }
+                if (err.response?.body?.error_code === 403) blocked++;
+                else failed++;
             }
         }
     }
 
     await bot.editMessageText(
-        `
-  ╭─❑ 「 <b>Broadcast Completed</b> 」 ❑──
-  │- <i>Total Group:</i> \`${ulist.length}\`
-  │- <i>Successful:</i> \`${success_br}\`
-  │- <i>Removed:</i> \`${block_num}\`
-  │- <i>Failed:</i> \`${no_success}\`
-  ╰❑
-    `,
-        {
-            chat_id: sentMsg.chat.id,
-            message_id: sentMsg.message_id,
-            parse_mode: "HTML",
-        }
+        `╭─❑ 「 <b>Group Broadcast</b> 」 ❑──\n│- <i>Total:</i> <code>${groups.length}</code>\n│- <i>OK:</i> <code>${success}</code>\n│- <i>Blocked:</i> <code>${blocked}</code>\n│- <i>Failed:</i> <code>${failed}</code>\n╰❑`,
+        { chat_id: sentMsg.chat.id, message_id: sentMsg.message_id, parse_mode: "HTML" }
     );
 });
 
+// --- Bot configs per language (name, description, commands) ---
+const ALL_LOCALES = ["en", "pt", "ru", "es", "fr", "hi", "it", "tr", "uk", "de", "ar", "id", "fa"];
+const TG_API = `https://api.telegram.org/bot${token}`;
+
+async function setBotConfigs() {
+    for (const locale of ALL_LOCALES) {
+        try {
+            await axios.post(`${TG_API}/setMyCommands`, {
+                commands: [
+                    { command: "start", description: i18n.__({ phrase: "commands_start", locale }) },
+                    { command: "help", description: i18n.__({ phrase: "commands_help", locale }) },
+                    { command: "lang", description: i18n.__({ phrase: "commands_lang", locale }) },
+                ],
+                language_code: locale,
+                scope: { type: "all_private_chats" },
+            }, { timeout: 8000 });
+
+            await axios.post(`${TG_API}/setMyName`, {
+                name: i18n.__({ phrase: "bot_name", locale }),
+                language_code: locale,
+            }, { timeout: 8000 });
+
+            await axios.post(`${TG_API}/setMyDescription`, {
+                description: i18n.__({ phrase: "bot_description", locale }),
+                language_code: locale,
+            }, { timeout: 8000 });
+
+            await axios.post(`${TG_API}/setMyShortDescription`, {
+                short_description: i18n.__({ phrase: "bot_short_description", locale }),
+                language_code: locale,
+            }, { timeout: 8000 });
+
+        } catch (err) {
+            console.error(`setBotConfigs error [${locale}]:`, err.message);
+        }
+    }
+    console.log("Bot configs set for all locales.");
+}
+
+// --- Online/offline ---
 function sendBotOnlineMessage() {
-    console.log(`Janna iniciado com sucesso...`);
-    bot.sendMessage(groupId, `#Janna #ONLINE\n\nBot is now playing ...`, { reply_to_message_id: 38597 });
+    console.log("Janna iniciado com sucesso...");
+    bot.sendMessage(groupId, "#Janna #ONLINE\n\nBot is now online...").catch(() => {});
 }
 
 function sendBotOfflineMessage() {
-    console.log(`Janna encerrado com sucesso...`);
-    bot.sendMessage(groupId, `#Janna #OFFLINE\n\nBot is now off ...`, { reply_to_message_id: 38597 })
-        .then(() => {
-            process.exit(0); // Encerra o processo do bot após enviar a mensagem offline
-        })
-        .catch((error) => {
-            console.error("Erro ao enviar mensagem de desligamento:", error);
-            process.exit(1); // Encerra o processo com um código de erro
-        });
+    console.log("Janna encerrado com sucesso...");
+    bot.sendMessage(groupId, "#Janna #OFFLINE\n\nBot is now offline...")
+        .then(() => process.exit(0))
+        .catch(() => process.exit(1));
 }
 
-process.on('SIGINT', () => {
-    sendBotOfflineMessage();
-});
+process.on("SIGINT", sendBotOfflineMessage);
 
 sendBotOnlineMessage();
+setBotConfigs();

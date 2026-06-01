@@ -9,6 +9,10 @@ const UserSchema = new Schema({
     lang: { type: String, default: "en" },
     inlineSearch: { type: String, required: false },
     is_dev: { type: Boolean, required: true, default: false },
+    createdAt: { type: Date, default: Date.now },
+    lastActiveAt: { type: Date, default: null },
+    referralSource: { type: String, default: null },
+    searchCount: { type: Number, default: 0 },
 });
 
 module.exports = UserSchema;
