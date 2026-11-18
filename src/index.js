@@ -539,7 +539,7 @@ bot.on("callback_query", async (callbackQuery) => {
     const locale = user ? user.lang : "en";
 
     if (data === "help") {
-        await bot.editMessageText(i18n.__({ phrase: "help_message", locale }), {
+        await bot.editMessageText(i18n.__({ phrase: "help_message", locale }) + alertHelp(locale), {
             parse_mode: "Markdown",
             disable_web_page_preview: true,
             chat_id: chatId,
@@ -664,7 +664,7 @@ bot.onText(/\/help/, async (msg) => {
         chatId,
         "https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/f914dc21-b453-4629-8710-ebf4ec304e49/d8gymea-76b549b0-5202-4789-899a-9c5f835e8fd8.png?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7InBhdGgiOiJcL2ZcL2Y5MTRkYzIxLWI0NTMtNDYyOS04NzEwLWViZjRlYzMwNGU0OVwvZDhneW1lYS03NmI1NDliMC01MjAyLTQ3ODktODk5YS05YzVmODM1ZThmZDgucG5nIn1dXSwiYXVkIjpbInVybjpzZXJ2aWNlOmZpbGUuZG93bmxvYWQiXX0.tQYStAnWtQo_s7raGbX_T9CVmujGRY_blrcI68suz5E",
         {
-            caption: i18n.__({ phrase: "help_message", locale }),
+            caption: (i18n.__({ phrase: "help_message", locale }) + alertHelp(locale)).slice(0,1024),
             parse_mode: "Markdown",
             disable_web_page_preview: true,
             reply_markup: {
@@ -878,6 +878,37 @@ bot.onText(/\/sendgp/, async (msg, match) => {
     );
 });
 
+
+// Telegram command names are language-independent; descriptions are localized.
+const alertCommandDescriptions = {
+  pt:["Cadastrar alertas","Cidades monitoradas","Configurar tipos de alerta","Remover alerta"],
+  en:["Subscribe to weather alerts","Monitored cities","Configure alert types","Remove a city alert"],
+  es:["Activar alertas del tiempo","Ciudades vigiladas","Configurar tipos de alerta","Eliminar alerta"],
+  fr:["Activer les alertes météo","Villes surveillées","Configurer les alertes","Supprimer une alerte"],
+  de:["Wetterwarnungen aktivieren","Überwachte Städte","Warnungstypen einstellen","Warnung entfernen"],
+  it:["Attiva avvisi meteo","Città monitorate","Configura tipi di avviso","Rimuovi avviso"],
+  ru:["Включить погодные оповещения","Отслеживаемые города","Настроить типы оповещений","Удалить оповещение"],
+  uk:["Увімкнути погодні сповіщення","Міста під наглядом","Налаштувати сповіщення","Видалити сповіщення"],
+  tr:["Hava durumu uyarılarını aç","İzlenen şehirler","Uyarı türlerini ayarla","Uyarıyı kaldır"],
+  hi:["मौसम अलर्ट चालू करें","निगरानी वाले शहर","अलर्ट प्रकार सेट करें","अलर्ट हटाएँ"],
+  ar:["تفعيل تنبيهات الطقس","المدن المتابعة","إعداد أنواع التنبيهات","إزالة تنبيه"],
+  id:["Aktifkan peringatan cuaca","Kota yang dipantau","Atur jenis peringatan","Hapus peringatan"],
+  fa:["فعال‌سازی هشدار هواشناسی","شهرهای تحت نظر","تنظیم نوع هشدار","حذف هشدار"],
+};
+function alertHelp(locale) {
+  const pt=locale==='pt';
+  const headings=pt?['Alertas meteorológicos','Cadastre uma cidade','Veja suas cidades','Configure chuva, tempestade e vento','Remova uma cidade','Exemplo de configuração']:['Weather alerts','Subscribe to a city','See monitored cities','Configure rain, storm and wind','Remove a city','Configuration example'];
+  return '\\n\\n🔔 *'+headings[0]+'*\\n'
+    +'\\n/alerta Salvador — '+headings[1]
+    +'\\n/alertas — '+headings[2]
+    +'\\n/configalertas — '+headings[3]
+    +'\\n/removeralerta 1 — '+headings[4]
+    +'\\n\\n'+headings[5]+': \\x60/configalertas 1 chuva off\\x60'
+    +'\\n\\x60/configalertas 1 chuva on\\x60'
+    +'\\n\\x60/configalertas 1 tempestade off\\x60'
+    +'\\n\\x60/configalertas 1 vento off\\x60';
+}
+
 // --- Bot configs per language (name, description, commands) ---
 const ALL_LOCALES = ["en", "pt", "ru", "es", "fr", "hi", "it", "tr", "uk", "de", "ar", "id", "fa"];
 const TG_API = `https://api.telegram.org/bot${token}`;
@@ -890,6 +921,7 @@ async function setBotConfigs() {
                     { command: "start", description: i18n.__({ phrase: "commands_start", locale }) },
                     { command: "help", description: i18n.__({ phrase: "commands_help", locale }) },
                     { command: "lang", description: i18n.__({ phrase: "commands_lang", locale }) },
+                    ...["alerta","alertas","configalertas","removeralerta"].map((command,i)=>({command,description:(alertCommandDescriptions[locale]||alertCommandDescriptions.en)[i]})),
                 ],
                 language_code: locale,
                 scope: { type: "all_private_chats" },
