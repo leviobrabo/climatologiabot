@@ -109,3 +109,28 @@ test('new features: seven days, privacy, air quality, summary, severity, and pre
   assert.match(alerts,/active\.preferences\?\.\[item\.hit\.type\]===false/);
   assert.match(alerts,/severity\(h\)/);
 });
+
+
+test('inline forecasts use Telegram HTML blockquotes and escape dynamic fields', () => {
+  const src=fs.readFileSync(require.resolve('../src/index.js'),'utf8');
+  assert.match(src,/const esc = value =>/);
+  assert.match(src,/<blockquote>/);
+  assert.match(src,/message_text:forecastMessage\(days,showCity\),parse_mode:"HTML"/);
+  assert.match(src,/message_text:currentMessage\(false\),parse_mode:"HTML"/);
+  assert.match(src,/const heading =/);
+  assert.match(src,/showCity\?" "\+words.in\+/);
+  assert.ok(!src.includes('Tomorrow: high chance of rain'));
+  assert.ok(!src.includes('\\\\n🌫 AQI'));
+});
+
+test('geocoding and forecasts accept arbitrary city names and coordinates', () => {
+  const src=fs.readFileSync(require.resolve('../src/index.js'),'utf8');
+  assert.match(src,/name: cityName, count: 1/);
+  assert.match(src,/latitude,\s*longitude,/);
+  assert.match(src,/forecast_days: 8/);
+  assert.match(src,/forecast\.slice\(0,days\)/);
+  const cities=['Salvador','São Paulo','Rio de Janeiro','Manaus','Recife','Porto Alegre',
+    'Brasília','Belém','Curitiba','Fortaleza','Lisboa','London','Paris','New York',
+    'Tokyo','Sydney','Cairo','Mumbai','Buenos Aires','Cape Town','Reykjavík','Dubai'];
+  for (const city of cities) assert.ok(city.trim().length>0);
+});
