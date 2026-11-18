@@ -90,7 +90,7 @@ function installWeatherAlerts(bot, mongoose, UserModel) {
       return say(msg.chat.id,'🔕 '+t(lang,'disabled')+' '+d.name+'.');
     } catch(e) {console.error('[alertas] Remover:',e.message);}
   });
-  bot.onText(/^\/configalertas(?:@\w+)?(?:\s+(\d+)\s+(tempestade|chuva|vento)\s+(on|off))?\s*$/i, async (msg,match) => {
+  bot.onText(/^\/configalertas(?:@\w+)?(?:\s+(\d+)(?:\s+(tempestade|chuva|vento)\s+(on|off))?)?\s*$/i, async (msg,match) => {
     if (msg.chat.type!=='private') return;
     const lang=await localeFor(msg.from.id);
     const docs=await subs.find({userID:msg.from.id,enabled:true}).sort({name:1}).toArray();
@@ -100,7 +100,8 @@ function installWeatherAlerts(bot, mongoose, UserModel) {
       await subs.updateOne({_id:docs[n-1]._id,userID:msg.from.id},{$set:{['preferences.'+type]:match[3].toLowerCase()==='on',updatedAt:new Date()}});
     }
     const updated=await subs.find({userID:msg.from.id,enabled:true}).sort({name:1}).toArray();
-    return say(msg.chat.id,'⚙️ '+t(lang,'monitored')+'\n'+updated.map((d,i)=> (i+1)+'. '+label(d)+'\n'+types.map((key,j)=>['⛈️','🌧️','💨'][j]+' '+key+': '+(d.preferences?.[key]===false?'OFF':'ON')).join(' · ')).join('\n')+'\n\n/configalertas 1 chuva off\n/configalertas 1 vento on');
+    const shown=Number.isInteger(n)&&n>=1&&n<=updated.length ? [updated[n-1]] : updated;
+    return say(msg.chat.id,'⚙️ '+t(lang,'monitored')+'\n'+shown.map((d,i)=> (Number.isInteger(n)&&n>=1&&n<=updated.length?n:i+1)+'. '+label(d)+'\n'+types.map((key,j)=>['⛈️','🌧️','💨'][j]+' '+key+': '+(d.preferences?.[key]===false?'OFF':'ON')).join(' · ')).join('\n')+'\n\n/configalertas 1 chuva off\n/configalertas 1 vento on');
   });
   function detect(data) {
     const h=data.hourly||{}, now=Date.now(), hits=new Map();
