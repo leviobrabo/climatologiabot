@@ -145,7 +145,7 @@ async function getWeatherData(cityName) {
             daily: "weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_probability_max,uv_index_max",
             wind_speed_unit: "kmh",
             timezone: timezone || "auto",
-            forecast_days: 4,
+            forecast_days: 8,
         },
         timeout: 8000,
     });
@@ -169,7 +169,7 @@ async function getWeatherData(cityName) {
             sunrise: formatTime(d.daily.sunrise[0]),
             sunset: formatTime(d.daily.sunset[0]),
         },
-        forecast: d.daily.time.slice(1, 4).map((date, i) => ({
+        forecast: d.daily.time.slice(1, 8).map((date, i) => ({
             date,
             weatherCode: d.daily.weather_code[i + 1],
             tempMax: Math.round(d.daily.temperature_2m_max[i + 1]),
@@ -224,11 +224,11 @@ bot.on("inline_query", async (query) => {
         const iconUrl = getWeatherIconUrl(weatherCode);
 
         const now = new Date();
-        const horarioFormatado = now.toLocaleTimeString("pt-BR", { timeZone: timezone });
+        const horarioFormatado = now.toLocaleTimeString(lang, { timeZone: weather.timezone });
 
-        const forecastLines = forecast.map(day => {
+        const forecastFor = (days) => forecast.slice(0, days).map(day => {
             const de = getWeatherEmoji(day.weatherCode);
-            const dateStr = new Date(day.date + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
+            const dateStr = new Date(day.date + "T12:00:00Z").toLocaleDateString(lang, { timeZone:"UTC",month: "short", day: "numeric" });
             return i18n.__({ phrase: "daily_forecast_line", locale: lang }, {
                 weatherEmoji: de,
                 date: dateStr,
@@ -255,43 +255,45 @@ bot.on("inline_query", async (query) => {
             sunset: today.sunset,
             countryCode,
             horarioFormatado,
-            forecastLines,
+            forecastLines: forecastFor(3),
         };
 
+        // Four explicit choices. Hidden variants never include city/country in the
+        // sent message, description or title; the inline search remains private.
+        const forecastTemplate = i18n.__({phrase:"daily_forecast_message",locale:lang},msgParams);
+        const hiddenForecast = forecastTemplate
+            .replace(new RegExp(city.replace(/[.*+?^\u0024{}()|[\]\\]/g,'\\$&'),'gi'),'')
+            .replace(/\\s+—\\s+\\n/g,'\\n');
+        const forecastMessage = (days, showCity) => {
+            const lines = forecastFor(days);
+            const template = showCity ? forecastTemplate : hiddenForecast;
+            const oldLines = msgParams.forecastLines;
+            // Replace only the forecast block, not any user-controlled text.
+            return template.replace(oldLines, lines);
+        };
         const results = [
             {
-                type: "article",
-                id: "1",
-                title: i18n.__({ phrase: "title_message_hidden", locale: lang }),
-                description: i18n.__({ phrase: "description_hidden", locale: lang }, { cityName: city, countryCode }),
-                input_message_content: {
-                    message_text: i18n.__({ phrase: "weather_forecast_message", locale: lang }, msgParams),
-                    parse_mode: "Markdown",
-                },
-                thumbnail_url: iconUrl,
+                type:"article", id:"1",
+                title:i18n.__({phrase:"title_message_hidden",locale:lang}),
+                description:i18n.__({phrase:"description_hidden",locale:lang},{cityName:city,countryCode}),
+                input_message_content:{message_text:i18n.__({phrase:"weather_forecast_message",locale:lang},msgParams),parse_mode:"Markdown"},
+                thumbnail_url:iconUrl,
             },
             {
-                type: "article",
-                id: "2",
-                title: i18n.__({ phrase: "title_message_visible", locale: lang }),
-                description: i18n.__({ phrase: "description_visible", locale: lang }, { cityName: city, countryCode }),
-                input_message_content: {
-                    message_text: i18n.__({ phrase: "city_weather_forecast_message", locale: lang }, msgParams),
-                    parse_mode: "Markdown",
-                },
-                thumbnail_url: iconUrl,
+                type:"article", id:"2",
+                title:i18n.__({phrase:"title_message_visible",locale:lang}),
+                description:i18n.__({phrase:"description_visible",locale:lang},{cityName:city,countryCode}),
+                input_message_content:{message_text:i18n.__({phrase:"city_weather_forecast_message",locale:lang},msgParams),parse_mode:"Markdown"},
+                thumbnail_url:iconUrl,
             },
-            {
-                type: "article",
-                id: "3",
-                title: i18n.__({ phrase: "title_message_forecast", locale: lang }),
-                description: i18n.__({ phrase: "description_forecast", locale: lang }, { cityName: city, countryCode }),
-                input_message_content: {
-                    message_text: i18n.__({ phrase: "daily_forecast_message", locale: lang }, msgParams),
-                    parse_mode: "Markdown",
-                },
-                thumbnail_url: iconUrl,
-            },
+            ...[3,7].flatMap(days => [false,true].map(showCity => ({
+                type:"article",
+                id:"forecast-"+days+"-"+(showCity?"visible":"private"),
+                title:(days+" "+(lang==="pt"?"dias":"days")+" · "+(showCity?(lang==="pt"?"com cidade":"show city"):(lang==="pt"?"sem cidade":"hide city"))),
+                description:showCity ? city+", "+countryCode : (lang==="pt"?"A mensagem enviada não mostra a cidade":"City omitted from sent message"),
+                input_message_content:{message_text:forecastMessage(days,showCity),parse_mode:"Markdown"},
+                thumbnail_url:iconUrl,
+            }))),
         ];
 
         await bot.answerInlineQuery(query.id, results);
