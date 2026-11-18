@@ -93,3 +93,19 @@ test('threshold detection and localized alert message are correct', () => {
   const quiet=detect({hourly:{time:[hour],weather_code:[0],precipitation:[19],wind_gusts_10m:[74]}});
   assert.equal(quiet.length,0);
 });
+
+test('new features: seven days, privacy, air quality, summary, severity, and preferences', () => {
+  const inline=fs.readFileSync(require.resolve('../src/index.js'),'utf8');
+  const alerts=fs.readFileSync(require.resolve('../src/alerts.js'),'utf8');
+  assert.match(inline,/forecast_days: 8/);
+  assert.match(inline,/slice\(1, 8\)/);
+  assert.match(inline,/\[3,7\]\.flatMap/);
+  assert.match(inline,/cityName:""/);
+  assert.match(inline,/air-quality-api\.open-meteo\.com/);
+  assert.match(inline,/us_aqi/);
+  assert.match(inline,/tomorrow\.precipProbability/);
+  assert.match(inline,/precipitation_sum/);
+  assert.match(alerts,/configalertas/);
+  assert.match(alerts,/active\.preferences\?\.\[item\.hit\.type\]===false/);
+  assert.match(alerts,/severity\(h\)/);
+});
