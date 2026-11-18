@@ -30,11 +30,11 @@ function installWeatherAlerts(bot, mongoose, UserModel) {
     try { return await bot.sendMessage(id, message, opts); }
     catch (e) { console.error('[alertas] Telegram:', e.message); }
   }
-  bot.onText(/^\\/alerta(?:@\\w+)?(?:\\s+(.+))?$/i, async (msg, match) => {
+  bot.onText(/^\/alerta(?:@\w+)?(?:\s+(.+))?$/i, async (msg, match) => {
     if (msg.chat.type !== 'private') return;
     const lang = await localeFor(msg.from.id);
     const input = (match[1] || '').trim().slice(0, 120);
-    if (input.length < 2) return say(msg.chat.id, '🌦️ <b>'+esc(t(lang,'intro'))+'</b>\\n\\n'+esc(t(lang,'usage'))+'\\n🌍 '+esc(t(lang,'worldwide'))+'\\n📋 '+esc(t(lang,'manage')), {parse_mode:'HTML'});
+    if (input.length < 2) return say(msg.chat.id, '🌦️ <b>'+esc(t(lang,'intro'))+'</b>\n\n'+esc(t(lang,'usage'))+'\n🌍 '+esc(t(lang,'worldwide'))+'\n📋 '+esc(t(lang,'manage')), {parse_mode:'HTML'});
     try {
       const data = await fetch('https://geocoding-api.open-meteo.com/v1/search', {name:input.split(',')[0].trim(),count:5,language:lang,format:'json'});
       const found = (data.results || []).filter(p => Number.isFinite(p.latitude) && Number.isFinite(p.longitude));
@@ -50,7 +50,7 @@ function installWeatherAlerts(bot, mongoose, UserModel) {
     if (!q.message || q.message.chat.type !== 'private') return;
     const lang = await localeFor(q.from.id);
     const [, , nonce, index] = q.data.split(':');
-    if (!/^\\d$/.test(index)) return;
+    if (!/^\d$/.test(index)) return;
     const key = q.from.id+':'+nonce, pending = choices.get(key);
     if (!pending || pending.expires < Date.now()) return say(q.from.id,'⌛ '+t(lang,'expired'));
     const p = pending.found[Number(index)];
@@ -62,19 +62,19 @@ function installWeatherAlerts(bot, mongoose, UserModel) {
       const count = await subs.countDocuments({userID:q.from.id,enabled:true});
       if (count >= 3) return say(q.from.id,'⚠️ '+t(lang,'limit'));
       await subs.updateOne({userID:q.from.id,locationId:p.id},{$set:{userID:q.from.id,locationId:p.id,chatId:q.from.id,enabled:true,name:p.name,admin1:p.admin1||'',country:p.country||'',latitude:p.latitude,longitude:p.longitude,timezone:p.timezone||'UTC',updatedAt:new Date()}},{upsert:true});
-      return say(q.from.id,'🔔 <b>'+esc(t(lang,'enabled'))+'</b>\\n\\n📍 '+esc(label(p))+'\\n⛈️ '+esc(t(lang,'events'))+'\\n\\nℹ️ '+esc(t(lang,'unofficial'))+'\\n📋 '+esc(t(lang,'manage')),{parse_mode:'HTML'});
+      return say(q.from.id,'🔔 <b>'+esc(t(lang,'enabled'))+'</b>\n\n📍 '+esc(label(p))+'\n⛈️ '+esc(t(lang,'events'))+'\n\nℹ️ '+esc(t(lang,'unofficial'))+'\n📋 '+esc(t(lang,'manage')),{parse_mode:'HTML'});
     } catch(e) {console.error('[alertas] Cadastro:',e.message);return say(q.from.id,'⚠️ '+t(lang,'saveError'));}
   });
-  bot.onText(/^\\/alertas(?:@\\w+)?\\s*$/i, async msg => {
+  bot.onText(/^\/alertas(?:@\w+)?\s*$/i, async msg => {
     if (msg.chat.type !== 'private') return;
     const lang = await localeFor(msg.from.id);
     try {
       const docs = await subs.find({userID:msg.from.id,enabled:true}).sort({name:1}).toArray();
       if (!docs.length) return say(msg.chat.id,'🔕 '+t(lang,'empty'));
-      return say(msg.chat.id,'🔔 <b>'+esc(t(lang,'monitored'))+'</b>\\n\\n'+docs.map((d,i)=>(i+1)+'. 📍 '+esc(label(d))).join('\\n')+'\\n\\n'+esc(t(lang,'removeHelp')),{parse_mode:'HTML'});
+      return say(msg.chat.id,'🔔 <b>'+esc(t(lang,'monitored'))+'</b>\n\n'+docs.map((d,i)=>(i+1)+'. 📍 '+esc(label(d))).join('\n')+'\n\n'+esc(t(lang,'removeHelp')),{parse_mode:'HTML'});
     } catch(e) {console.error('[alertas] Lista:',e.message);}
   });
-  bot.onText(/^\\/removeralerta(?:@\\w+)?(?:\\s+(\\d+))?\\s*$/i, async (msg,match) => {
+  bot.onText(/^\/removeralerta(?:@\w+)?(?:\s+(\d+))?\s*$/i, async (msg,match) => {
     if (msg.chat.type !== 'private') return;
     const lang = await localeFor(msg.from.id);
     const n = Number(match[1]);
@@ -108,7 +108,7 @@ function installWeatherAlerts(bot, mongoose, UserModel) {
     const detail = h.type==='tempestade' ? t(lang,'thunder') :
       h.type==='chuva intensa' ? Math.round(h.rain)+' '+t(lang,'rainUnit') :
       t(lang,'gusts')+' '+Math.round(h.gust)+' '+t(lang,'windUnit');
-    return h.emoji+' <b>'+esc(t(lang,'notice'))+' — '+esc(t(lang,typeKey))+'</b>\\n\\n📍 <b>'+esc(city)+'</b>\\n🕒 '+esc(t(lang,'forecast'))+': '+esc(when)+' ('+esc(tz)+')\\n🌦️ '+esc(detail)+'\\n\\n⚠️ '+esc(t(lang,'safety'))+'\\n\\nℹ️ '+esc(t(lang,'disclaimer'))+'\\n🔕 '+esc(t(lang,'manage'));
+    return h.emoji+' <b>'+esc(t(lang,'notice'))+' — '+esc(t(lang,typeKey))+'</b>\n\n📍 <b>'+esc(city)+'</b>\n🕒 '+esc(t(lang,'forecast'))+': '+esc(when)+' ('+esc(tz)+')\n🌦️ '+esc(detail)+'\n\n⚠️ '+esc(t(lang,'safety'))+'\n\nℹ️ '+esc(t(lang,'disclaimer'))+'\n🔕 '+esc(t(lang,'manage'));
   }
   async function scan() {
     if (scanning || mongoose.connection.readyState!==1) return;
