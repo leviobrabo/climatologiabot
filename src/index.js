@@ -237,76 +237,91 @@ bot.on("inline_query", async (query) => {
         const now = new Date();
         const horarioFormatado = now.toLocaleTimeString(lang, { timeZone: weather.timezone });
 
-        const aqi = weather.airQuality;
-        const aqiLabel = aqi===null ? null : aqi<=50 ? "🟢 Good" : aqi<=100 ? "🟡 Moderate" : aqi<=150 ? "🟠 Unhealthy for sensitive groups" : aqi<=200 ? "🔴 Unhealthy" : aqi<=300 ? "🟣 Very unhealthy" : "⚫ Hazardous";
-        const aqiLine = aqi===null ? "" : "\\n🌫 AQI (US): "+aqi+" — "+aqiLabel+(aqi>100?"\\n⚠️ Sensitive groups should limit prolonged outdoor activity.":"");
-        const tomorrow=forecast[0];
-        const summary = tomorrow ? (tomorrow.precipProbability>=70 ? "🌧️ Tomorrow: high chance of rain" : tomorrow.precipProbability>=40 ? "🌦️ Tomorrow: possible rain" : "🌤️ Tomorrow: lower chance of rain") + " ("+tomorrow.precipProbability+"%)." : "";
-        const forecastFor = (days) => forecast.slice(0, days).map(day => {
-            const de = getWeatherEmoji(day.weatherCode);
-            const dateStr = new Date(day.date + "T12:00:00Z").toLocaleDateString(lang, { timeZone:"UTC",month: "short", day: "numeric" });
-            return i18n.__({ phrase: "daily_forecast_line", locale: lang }, {
-                weatherEmoji: de,
-                date: dateStr,
-                tempMin: day.tempMin,
-                tempMax: day.tempMax,
-                precipProbability: day.precipProbability,
-                uvIndexMax: day.uvIndexMax,
-            }) + (day.precipMm===null ? "" : " | 💧 "+day.precipMm+" mm");
-        }).join("\n");
-
-        const msgParams = {
-            cityName: city.toUpperCase(),
-            emoji,
-            weatherEmoji,
-            temperature: current.temperature,
-            weatherDescription,
-            feelsLike: current.feelsLike,
-            windSpeed: current.windSpeed,
-            windGusts: current.windGusts,
-            uvIndex: current.uvIndex,
-            humidity: current.humidity,
-            precipitationProbability: today.precipitationProbability,
-            sunrise: today.sunrise,
-            sunset: today.sunset,
-            countryCode,
-            horarioFormatado,
-            forecastLines: forecastFor(3),
+        // Escape dynamic content before using Telegram HTML parse mode.
+        const esc = value => String(value ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+        const pt = lang === "pt";
+        const words = pt ? {
+            today:"Tempo agora",city:"Cidade",temp:"Temperatura",condition:"Condição",feels:"Sensação térmica",
+            wind:"Vento",gust:"Rajadas",rain:"Chance de chuva",uv:"Índice UV",humidity:"Umidade",
+            sunrise:"Nascer do sol",sunset:"Pôr do sol",updated:"Consultado às",forecast:"Previsão de",
+            days:"dias",in:"em",tomorrow:"Amanhã",high:"alta chance de chuva",possible:"possibilidade de chuva",
+            low:"baixa chance de chuva",air:"Qualidade do ar",good:"Boa",moderate:"Moderada",
+            sensitive:"Ruim para grupos sensíveis",unhealthy:"Ruim",very:"Muito ruim",hazard:"Perigosa",
+            advice:"Grupos sensíveis devem reduzir atividades prolongadas ao ar livre",
+            cityHidden:"Sua cidade",show:"com cidade",hide:"sem cidade",hiddenDesc:"A cidade não aparece na mensagem"
+        } : {
+            today:"Current weather",city:"City",temp:"Temperature",condition:"Conditions",feels:"Feels like",
+            wind:"Wind",gust:"Gusts",rain:"Rain chance",uv:"UV index",humidity:"Humidity",
+            sunrise:"Sunrise",sunset:"Sunset",updated:"Checked at",forecast:"Forecast for",
+            days:"days",in:"in",tomorrow:"Tomorrow",high:"high chance of rain",possible:"possible rain",
+            low:"lower chance of rain",air:"Air quality",good:"Good",moderate:"Moderate",
+            sensitive:"Unhealthy for sensitive groups",unhealthy:"Unhealthy",very:"Very unhealthy",hazard:"Hazardous",
+            advice:"Sensitive groups should limit prolonged outdoor activity",
+            cityHidden:"Your city",show:"show city",hide:"hide city",hiddenDesc:"City is omitted from the sent message"
         };
-
-        // Four explicit choices. Hidden variants never include city/country in the
-        // sent message, description or title; the inline search remains private.
-        const forecastTemplate = i18n.__({phrase:"daily_forecast_message",locale:lang},msgParams);
-        const hiddenForecast = i18n.__({phrase:"daily_forecast_message",locale:lang},{...msgParams,cityName:""});
+        const aqi = weather.airQuality;
+        const aqiStatus = aqi === null ? "" : aqi<=50 ? "🟢 "+words.good : aqi<=100 ? "🟡 "+words.moderate :
+            aqi<=150 ? "🟠 "+words.sensitive : aqi<=200 ? "🔴 "+words.unhealthy :
+            aqi<=300 ? "🟣 "+words.very : "⚫ "+words.hazard;
+        const airLine = aqi === null ? "" : "\n🌫️ <b>"+words.air+" (US AQI):</b> "+esc(aqi)+" — "+aqiStatus+
+            (aqi>100?"\n⚠️ "+words.advice+".":"");
+        const tomorrow = forecast[0];
+        const rainSummary = tomorrow ? "\n🌦️ <b>"+words.tomorrow+":</b> "+
+            (tomorrow.precipProbability>=70?words.high:tomorrow.precipProbability>=40?words.possible:words.low)+
+            " ("+esc(tomorrow.precipProbability)+"%)." : "";
+        const footer = "\n\n🕒 <i>"+words.updated+": "+esc(horarioFormatado)+"</i>";
+        const currentMessage = showCity => {
+            const header = "🌤️ <b>"+words.today+" — "+(showCity?esc(city.toUpperCase()):words.cityHidden)+"</b>";
+            const details = [
+                "🌡️ <b>"+words.temp+":</b> "+esc(current.temperature)+"°C",
+                weatherEmoji+" <b>"+words.condition+":</b> "+esc(weatherDescription),
+                "🥵 <b>"+words.feels+":</b> "+esc(current.feelsLike)+"°C",
+                "💨 <b>"+words.wind+":</b> "+esc(current.windSpeed)+" km/h ("+words.gust+": "+esc(current.windGusts)+" km/h)",
+                "🌧️ <b>"+words.rain+":</b> "+esc(today.precipitationProbability)+"%",
+                "☀️ <b>"+words.uv+":</b> "+esc(current.uvIndex),
+                "💧 <b>"+words.humidity+":</b> "+esc(current.humidity)+"%",
+                "🌅 <b>"+words.sunrise+":</b> "+esc(today.sunrise),
+                "🌇 <b>"+words.sunset+":</b> "+esc(today.sunset),
+            ];
+            if(showCity) details.unshift("🏙️ <b>"+words.city+":</b> "+esc(city));
+            return header+"\n\n<blockquote>"+details.join("\n")+"</blockquote>"+airLine+footer;
+        };
         const forecastMessage = (days, showCity) => {
-            const lines = forecastFor(days);
-            const template = showCity ? forecastTemplate : hiddenForecast;
-            const oldLines = msgParams.forecastLines;
-            // Replace only the forecast block, not any user-controlled text.
-            const withDays = days === 7 ? template.replace(/3([ -]?)(day|dias|jours|Tage|giorni|дн|дн|gün|दिन|أيام|hari|روز)/i, (_,sep,unit)=>'7'+sep+unit) : template;
-            return withDays.replace(oldLines, lines)+"\n\n"+summary+aqiLine;
+            const heading = "📅 <b>"+words.forecast+" "+days+" "+words.days+
+                (showCity?" "+words.in+" "+esc(city.toUpperCase()):"")+"</b>";
+            const blocks = forecast.slice(0,days).map(day=>{
+                const dateStr = new Date(day.date+"T12:00:00Z").toLocaleDateString(lang,{
+                    timeZone:"UTC",day:"numeric",month:"short"
+                });
+                const line = "🌡️ "+esc(day.tempMin)+"°C – "+esc(day.tempMax)+"°C"+
+                    "   🌧️ "+esc(day.precipProbability)+"%"+
+                    (day.precipMm===null?"":"   💧 "+esc(day.precipMm)+" mm")+
+                    "   ☀️ UV "+esc(day.uvIndexMax);
+                return getWeatherEmoji(day.weatherCode)+" <b>"+esc(dateStr)+"</b>\n"+line;
+            });
+            return heading+"\n\n<blockquote>"+blocks.join("\n\n")+"</blockquote>"+
+                rainSummary+airLine+footer;
         };
         const results = [
             {
                 type:"article", id:"1",
                 title:i18n.__({phrase:"title_message_hidden",locale:lang}),
-                description:i18n.__({phrase:"description_hidden",locale:lang},{cityName:city,countryCode}),
-                input_message_content:{message_text:i18n.__({phrase:"weather_forecast_message",locale:lang},msgParams)+aqiLine,parse_mode:"Markdown"},
+                description:words.hiddenDesc,
+                input_message_content:{message_text:currentMessage(false),parse_mode:"HTML"},
                 thumbnail_url:iconUrl,
             },
             {
                 type:"article", id:"2",
                 title:i18n.__({phrase:"title_message_visible",locale:lang}),
-                description:i18n.__({phrase:"description_visible",locale:lang},{cityName:city,countryCode}),
-                input_message_content:{message_text:i18n.__({phrase:"city_weather_forecast_message",locale:lang},msgParams)+aqiLine,parse_mode:"Markdown"},
+                description:city+", "+countryCode,
+                input_message_content:{message_text:currentMessage(true),parse_mode:"HTML"},
                 thumbnail_url:iconUrl,
             },
-            ...[3,7].flatMap(days => [false,true].map(showCity => ({
-                type:"article",
-                id:"forecast-"+days+"-"+(showCity?"visible":"private"),
-                title:(days+" "+(lang==="pt"?"dias":"days")+" · "+(showCity?(lang==="pt"?"com cidade":"show city"):(lang==="pt"?"sem cidade":"hide city"))),
-                description:showCity ? city+", "+countryCode : (lang==="pt"?"A mensagem enviada não mostra a cidade":"City omitted from sent message"),
-                input_message_content:{message_text:forecastMessage(days,showCity),parse_mode:"Markdown"},
+            ...[3,7].flatMap(days=>[false,true].map(showCity=>({
+                type:"article",id:"forecast-"+days+"-"+(showCity?"visible":"private"),
+                title:days+" "+words.days+" · "+(showCity?words.show:words.hide),
+                description:showCity?city+", "+countryCode:words.hiddenDesc,
+                input_message_content:{message_text:forecastMessage(days,showCity),parse_mode:"HTML"},
                 thumbnail_url:iconUrl,
             }))),
         ];
