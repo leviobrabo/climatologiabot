@@ -911,17 +911,29 @@ const alertCommandDescriptions = {
   fa:["فعال‌سازی هشدار هواشناسی","شهرهای تحت نظر","تنظیم نوع هشدار","حذف هشدار"],
 };
 function alertHelp(locale) {
-  const pt=locale==='pt';
-  const headings=pt?['Alertas meteorológicos','Cadastre uma cidade','Veja suas cidades','Configure chuva, tempestade e vento','Remova uma cidade','Exemplo de configuração']:['Weather alerts','Subscribe to a city','See monitored cities','Configure rain, storm and wind','Remove a city','Configuration example'];
-  return '\\n\\n🔔 *'+headings[0]+'*\\n'
-    +'\\n/alerta Salvador — '+headings[1]
-    +'\\n/alertas — '+headings[2]
-    +'\\n/configalertas — '+headings[3]
-    +'\\n/removeralerta 1 — '+headings[4]
-    +'\\n\\n'+headings[5]+': \\x60/configalertas 1 chuva off\\x60'
-    +'\\n\\x60/configalertas 1 chuva on\\x60'
-    +'\\n\\x60/configalertas 1 tempestade off\\x60'
-    +'\\n\\x60/configalertas 1 vento off\\x60';
+  const pt = locale === "pt";
+  const heading = pt ? "Alertas meteorológicos" : "Weather alerts";
+  const items = pt ? [
+    ["/alerta Salvador", "Cadastrar cidade"],
+    ["/alertas", "Ver cidades monitoradas"],
+    ["/configalertas 1", "Ver configurações da cidade"],
+    ["/configalertas 1 chuva off", "Desativar chuva"],
+    ["/configalertas 1 chuva on", "Ativar chuva"],
+    ["/configalertas 1 tempestade off", "Desativar tempestades"],
+    ["/configalertas 1 vento off", "Desativar ventos"],
+    ["/removeralerta 1", "Remover cidade"]
+  ] : [
+    ["/alerta Salvador", "Subscribe to a city"],
+    ["/alertas", "List monitored cities"],
+    ["/configalertas 1", "View city settings"],
+    ["/configalertas 1 chuva off", "Disable rain alerts"],
+    ["/configalertas 1 chuva on", "Enable rain alerts"],
+    ["/configalertas 1 tempestade off", "Disable storm alerts"],
+    ["/configalertas 1 vento off", "Disable wind alerts"],
+    ["/removeralerta 1", "Remove a city"]
+  ];
+  return "\\n\\n🔔 *" + heading + "*\\n\\n" +
+    items.map(([cmd, desc]) => "`" + cmd + "` — " + desc).join("\\n");
 }
 
 // --- Bot configs per language (name, description, commands) ---
