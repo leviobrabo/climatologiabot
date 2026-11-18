@@ -22,7 +22,7 @@ const bot = new TelegramBot(token, { polling: true });
 
 // Optional city-based weather alerts (private chat opt-in).
 const { installWeatherAlerts } = require('./alerts');
-installWeatherAlerts(bot, require('mongoose'));
+installWeatherAlerts(bot, require('mongoose'), UserModel);
 
 // --- Helpers ---
 function is_dev(user_id) {
