@@ -78,15 +78,14 @@ test('command handlers work with simulated Telegram, database and geocoding', as
 });
 test('threshold detection and localized alert message are correct', () => {
   const source=fs.readFileSync(require.resolve('../src/alerts.js'),'utf8')
-    .replace('module.exports={installWeatherAlerts};','module.exports={installWeatherAlerts, __test:{detect,message}};')
-    .replace('  if(mongoose.connection.readyState===1) init().catch(console.error);','  if(mongoose.connection.readyState===1) init().catch(console.error);');
+    ;
   // Evaluate function declarations within the installer by injecting a test-only export.
   const patched=source.replace('  async function scan() {','  globalThis.__alertTest={detect,message};\n  async function scan() {');
   const sandbox={module:{exports:{}},exports:{},require:id=>id==='axios'?{create:()=>({})}:id==='crypto'?require('node:crypto'):id==='./alerts-locales'?{t}:require(id),console,setInterval:()=>({unref(){}}),setTimeout:()=>({unref(){}}),Date,Map,Set};
   vm.runInNewContext(patched,sandbox);
   sandbox.module.exports.installWeatherAlerts({onText(){},on(){}},{connection:{readyState:0,collection:()=>({}),once(){}}},{});
   const {detect,message}=sandbox.__alertTest;
-  const hour=new Date(Date.now()+3600000).toISOString().slice(0,13)+':00';
+  const hour=new Date(Date.now()+7200000).toISOString().slice(0,13)+':00';
   const hits=detect({hourly:{time:[hour],weather_code:[95],precipitation:[25],wind_gusts_10m:[80]}});
   assert.deepEqual(Array.from(hits,h=>h.type),['tempestade','chuva intensa','ventos fortes']);
   assert.match(message('Salvador',hits[1],'pt','America/Bahia'),/25 mm\/h/);
