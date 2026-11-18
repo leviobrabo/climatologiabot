@@ -16,6 +16,9 @@ function installWeatherAlerts(bot, mongoose, UserModel) {
   const queue = [];
   const queued = new Set();
   const HOUR = 3600000;
+  const types = ['tempestade','chuva intensa','ventos fortes'];
+  const defaultPrefs = () => ({'tempestade':true,'chuva intensa':true,'ventos fortes':true});
+  const severity = h => h.type==='tempestade' ? (h.code===99?'high':'moderate') : h.type==='chuva intensa' ? (h.rain>=50?'high':'moderate') : (h.gust>=100?'high':'moderate');
   const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const wait = ms => new Promise(r => setTimeout(r, ms));
   const label = p => [p.name, p.admin1, p.country].filter(Boolean).join(', ');
@@ -61,7 +64,7 @@ function installWeatherAlerts(bot, mongoose, UserModel) {
       if (old?.enabled) return say(q.from.id,'✅ '+esc(t(lang,'already'))+' '+esc(label(p)),{parse_mode:'HTML'});
       const count = await subs.countDocuments({userID:q.from.id,enabled:true});
       if (count >= 3) return say(q.from.id,'⚠️ '+t(lang,'limit'));
-      await subs.updateOne({userID:q.from.id,locationId:p.id},{$set:{userID:q.from.id,locationId:p.id,chatId:q.from.id,enabled:true,name:p.name,admin1:p.admin1||'',country:p.country||'',latitude:p.latitude,longitude:p.longitude,timezone:p.timezone||'UTC',updatedAt:new Date()}},{upsert:true});
+      await subs.updateOne({userID:q.from.id,locationId:p.id},{$set:{userID:q.from.id,locationId:p.id,chatId:q.from.id,enabled:true,name:p.name,admin1:p.admin1||'',country:p.country||'',latitude:p.latitude,longitude:p.longitude,timezone:p.timezone||'UTC',preferences:old?.preferences||defaultPrefs(),updatedAt:new Date()}},{upsert:true});
       return say(q.from.id,'🔔 <b>'+esc(t(lang,'enabled'))+'</b>\n\n📍 '+esc(label(p))+'\n⛈️ '+esc(t(lang,'events'))+'\n\nℹ️ '+esc(t(lang,'unofficial'))+'\n📋 '+esc(t(lang,'manage')),{parse_mode:'HTML'});
     } catch(e) {console.error('[alertas] Cadastro:',e.message);return say(q.from.id,'⚠️ '+t(lang,'saveError'));}
   });
@@ -87,6 +90,18 @@ function installWeatherAlerts(bot, mongoose, UserModel) {
       return say(msg.chat.id,'🔕 '+t(lang,'disabled')+' '+d.name+'.');
     } catch(e) {console.error('[alertas] Remover:',e.message);}
   });
+  bot.onText(/^\/configalertas(?:@\w+)?(?:\s+(\d+)\s+(tempestade|chuva|vento)\s+(on|off))?\s*$/i, async (msg,match) => {
+    if (msg.chat.type!=='private') return;
+    const lang=await localeFor(msg.from.id);
+    const docs=await subs.find({userID:msg.from.id,enabled:true}).sort({name:1}).toArray();
+    if (!docs.length) return say(msg.chat.id,t(lang,'empty'));
+    const n=Number(match[1]),type={tempestade:'tempestade',chuva:'chuva intensa',vento:'ventos fortes'}[match[2]?.toLowerCase()];
+    if (type && n>=1 && n<=docs.length) {
+      await subs.updateOne({_id:docs[n-1]._id,userID:msg.from.id},{$set:{['preferences.'+type]:match[3].toLowerCase()==='on',updatedAt:new Date()}});
+    }
+    const updated=await subs.find({userID:msg.from.id,enabled:true}).sort({name:1}).toArray();
+    return say(msg.chat.id,'⚙️ '+t(lang,'monitored')+'\n'+updated.map((d,i)=> (i+1)+'. '+label(d)+'\n'+types.map((key,j)=>['⛈️','🌧️','💨'][j]+' '+key+': '+(d.preferences?.[key]===false?'OFF':'ON')).join(' · ')).join('\n')+'\n\n/configalertas 1 chuva off\n/configalertas 1 vento on');
+  });
   function detect(data) {
     const h=data.hourly||{}, now=Date.now(), hits=new Map();
     for(let i=0;i<(h.time||[]).length;i++) {
@@ -94,7 +109,7 @@ function installWeatherAlerts(bot, mongoose, UserModel) {
       if (!Number.isFinite(at) || at<now-1800000 || at>now+3*HOUR) continue;
       const code=h.weather_code?.[i], rain=h.precipitation?.[i]||0, gust=h.wind_gusts_10m?.[i]||0;
       for (const x of [[ [95,96,99].includes(code),'tempestade','⛈️','Trovoadas previstas'],[rain>=20,'chuva intensa','🌧️',Math.round(rain)+' mm/h previstos'],[gust>=75,'ventos fortes','💨','Rajadas de '+Math.round(gust)+' km/h previstas']]) {
-        if (x[0] && !hits.has(x[1])) hits.set(x[1],{type:x[1],emoji:x[2],detail:x[3],rain,gust,at});
+        if (x[0] && !hits.has(x[1])) hits.set(x[1],{type:x[1],emoji:x[2],detail:x[3],rain,gust,code,at});
       }
     }
     return [...hits.values()];
@@ -108,7 +123,7 @@ function installWeatherAlerts(bot, mongoose, UserModel) {
     const detail = h.type==='tempestade' ? t(lang,'thunder') :
       h.type==='chuva intensa' ? Math.round(h.rain)+' '+t(lang,'rainUnit') :
       t(lang,'gusts')+' '+Math.round(h.gust)+' '+t(lang,'windUnit');
-    return h.emoji+' <b>'+esc(t(lang,'notice'))+' — '+esc(t(lang,typeKey))+'</b>\n\n📍 <b>'+esc(city)+'</b>\n🕒 '+esc(t(lang,'forecast'))+': '+esc(when)+' ('+esc(tz)+')\n🌦️ '+esc(detail)+'\n\n⚠️ '+esc(t(lang,'safety'))+'\n\nℹ️ '+esc(t(lang,'disclaimer'))+'\n🔕 '+esc(t(lang,'manage'));
+    return h.emoji+' <b>'+esc(t(lang,'notice'))+' — '+esc(t(lang,typeKey))+'</b> ['+(severity(h)==='high'?'🔴 HIGH':'🟠 MODERATE')+']\n\n📍 <b>'+esc(city)+'</b>\n🕒 '+esc(t(lang,'forecast'))+': '+esc(when)+' ('+esc(tz)+')\n🌦️ '+esc(detail)+'\n\n⚠️ '+esc(t(lang,'safety'))+'\n\nℹ️ '+esc(t(lang,'disclaimer'))+'\n🔕 '+esc(t(lang,'manage'));
   }
   async function scan() {
     if (scanning || mongoose.connection.readyState!==1) return;
@@ -125,8 +140,9 @@ function installWeatherAlerts(bot, mongoose, UserModel) {
           const forecast=await fetch('https://api.open-meteo.com/v1/forecast',{latitude:loc.latitude,longitude:loc.longitude,hourly:'weather_code,precipitation,wind_gusts_10m',forecast_days:2,timezone:'UTC',wind_speed_unit:'kmh'});
           const hits=detect(forecast);
           if (!hits.length) continue;
-          const recipients=await subs.find({locationId:loc._id,enabled:true}).project({_id:1,userID:1,chatId:1}).toArray();
+          const recipients=await subs.find({locationId:loc._id,enabled:true}).project({_id:1,userID:1,chatId:1,preferences:1}).toArray();
           for(const h of hits) for(const sub of recipients) {
+            if (sub.preferences?.[h.type]===false) continue;
             const bucket=Math.floor(Date.now()/(6*HOUR));
             const id=sub.userID+':'+loc._id+':'+h.type+':'+bucket;
             if(queued.has(id)) continue;
@@ -143,7 +159,7 @@ function installWeatherAlerts(bot, mongoose, UserModel) {
     const item=queue.shift();
     try {
       const active=await subs.findOne({_id:item.sub._id,enabled:true});
-      if (!active) return;
+      if (!active || active.preferences?.[item.hit.type]===false) return;
       // Atomic dedup persists across restarts. A failed send is logged, never silently retried forever.
       const claim=await notices.updateOne({_id:item.id},{$setOnInsert:{createdAt:new Date()}},{upsert:true});
       if (!claim.upsertedCount) return;
