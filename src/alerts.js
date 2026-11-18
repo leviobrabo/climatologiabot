@@ -90,7 +90,7 @@ function installWeatherAlerts(bot, mongoose, UserModel) {
   function detect(data) {
     const h=data.hourly||{}, now=Date.now(), hits=new Map();
     for(let i=0;i<(h.time||[]).length;i++) {
-      const at=Date.parse(h.time[i]+'Z');
+      const at=Date.parse(h.time[i].endsWith('Z') ? h.time[i] : h.time[i]+'Z');
       if (!Number.isFinite(at) || at<now-1800000 || at>now+3*HOUR) continue;
       const code=h.weather_code?.[i], rain=h.precipitation?.[i]||0, gust=h.wind_gusts_10m?.[i]||0;
       for (const x of [[ [95,96,99].includes(code),'tempestade','⛈️','Trovoadas previstas'],[rain>=20,'chuva intensa','🌧️',Math.round(rain)+' mm/h previstos'],[gust>=75,'ventos fortes','💨','Rajadas de '+Math.round(gust)+' km/h previstas']]) {
