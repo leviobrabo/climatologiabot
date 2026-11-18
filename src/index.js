@@ -932,8 +932,8 @@ function alertHelp(locale) {
     ["/configalertas 1 vento off", "Disable wind alerts"],
     ["/removeralerta 1", "Remove a city"]
   ];
-  return "\\n\\n🔔 *" + heading + "*\\n\\n" +
-    items.map(([cmd, desc]) => "`" + cmd + "` — " + desc).join("\\n");
+  return "\n\n🔔 *" + heading + "*\n\n" +
+    items.map(([cmd, desc]) => "`" + cmd + "` — " + desc).join("\n");
 }
 
 // --- Bot configs per language (name, description, commands) ---
