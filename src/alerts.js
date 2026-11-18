@@ -19,10 +19,6 @@ function installWeatherAlerts(bot, mongoose, UserModel) {
   const types = ['tempestade','chuva intensa','ventos fortes'];
   const commands = (text) => esc(text).replace(/(\/\w+(?:\s+\d+)?(?:\s+(?:chuva|vento|tempestade)\s+(?:on|off))?)/g, '<code>$1</code>');
   const html = { parse_mode: 'HTML' };
-  const settings = (docs, start = 1) => docs.map((d,i) =>
-    '<b>'+(start+i)+'. 📍 '+esc(label(d))+'</b>\n' +
-    types.map((key,j)=>['⛈️','🌧️','💨'][j]+' '+esc(t('pt', ['stormType','rainType','windType'][j]))+': <b>'+(d.preferences?.[key]===false?'OFF':'ON')+'</b>').join(' · ')
-  ).join('\n\n');
   const defaultPrefs = () => ({'tempestade':true,'chuva intensa':true,'ventos fortes':true});
   const severity = h => h.type==='tempestade' ? (h.code===99?'high':'moderate') : h.type==='chuva intensa' ? (h.rain>=50?'high':'moderate') : (h.gust>=100?'high':'moderate');
   const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -110,8 +106,8 @@ function installWeatherAlerts(bot, mongoose, UserModel) {
     const shown=valid ? [updated[n-1]] : updated;
     const title='⚙️ <b>'+esc(t(lang,'monitored'))+'</b>';
     const details=shown.map((d,i)=>
-      '<b>'+(valid?n:i+1)+'. 📍 '+esc(label(d))+'</b>\n'+
-      types.map((key,j)=>['⛈️','🌧️','💨'][j]+' '+esc(t(lang,['stormType','rainType','windType'][j]))+': <b>'+(d.preferences?.[key]===false?'OFF':'ON')+'</b>').join(' · ')
+      '<b>'+(valid?n:i+1)+'. 📍 '+esc(label(d))+'</b>\n\n'+
+      types.map((key,j)=>['⛈️','🌧️','💨'][j]+' '+esc(t(lang,['stormType','rainType','windType'][j]))+': <b>'+(d.preferences?.[key]===false?'OFF':'ON')+'</b>').join('\n')
     ).join('\n\n');
     const confirmation=type && valid
       ? '✅ <b>'+(match[3].toLowerCase()==='on' ? (lang==='pt'?'Ativado':'Enabled') : (lang==='pt'?'Desativado':'Disabled'))+'</b>: '+esc(t(lang,{tempestade:'stormType','chuva intensa':'rainType','ventos fortes':'windType'}[type]))+' — '+esc(label(updated[n-1]))+'\n\n'
