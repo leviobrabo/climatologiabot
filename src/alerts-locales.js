@@ -433,4 +433,59 @@ const translations={
   ]
 };
 function t(locale,key){const idx=keys.indexOf(key);return idx<0?key:(translations[locale]||translations.en)[idx]||translations.en[idx];}
-module.exports={t};
+const statusLabels={
+  "pt": [
+    "ATIVADO",
+    "DESATIVADO"
+  ],
+  "en": [
+    "ENABLED",
+    "DISABLED"
+  ],
+  "es": [
+    "ACTIVADO",
+    "DESACTIVADO"
+  ],
+  "fr": [
+    "ACTIVÉ",
+    "DÉSACTIVÉ"
+  ],
+  "de": [
+    "AKTIVIERT",
+    "DEAKTIVIERT"
+  ],
+  "it": [
+    "ATTIVATO",
+    "DISATTIVATO"
+  ],
+  "ru": [
+    "ВКЛЮЧЕНО",
+    "ВЫКЛЮЧЕНО"
+  ],
+  "uk": [
+    "УВІМКНЕНО",
+    "ВИМКНЕНО"
+  ],
+  "tr": [
+    "ETKİN",
+    "DEVRE DIŞI"
+  ],
+  "hi": [
+    "सक्रिय",
+    "निष्क्रिय"
+  ],
+  "ar": [
+    "مفعّل",
+    "معطّل"
+  ],
+  "id": [
+    "AKTIF",
+    "NONAKTIF"
+  ],
+  "fa": [
+    "فعال",
+    "غیرفعال"
+  ]
+};
+function status(locale,enabled){const labels=statusLabels[locale]||statusLabels.en;return labels[enabled?0:1];}
+module.exports={t,status};
