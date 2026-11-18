@@ -20,6 +20,10 @@ const channelStatusId = process.env.channelStatusId;
 
 const bot = new TelegramBot(token, { polling: true });
 
+// Optional city-based weather alerts (private chat opt-in).
+const { installWeatherAlerts } = require('./alerts');
+installWeatherAlerts(bot, require('mongoose'));
+
 // --- Helpers ---
 function is_dev(user_id) {
     const devUsers = (process.env.DEV_USERS || "").split(",").filter(Boolean);
