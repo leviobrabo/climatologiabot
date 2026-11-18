@@ -261,9 +261,7 @@ bot.on("inline_query", async (query) => {
         // Four explicit choices. Hidden variants never include city/country in the
         // sent message, description or title; the inline search remains private.
         const forecastTemplate = i18n.__({phrase:"daily_forecast_message",locale:lang},msgParams);
-        const hiddenForecast = forecastTemplate
-            .replace(new RegExp(city.replace(/[.*+?^\u0024{}()|[\]\\]/g,'\\$&'),'gi'),'')
-            .replace(/\\s+—\\s+\\n/g,'\\n');
+        const hiddenForecast = i18n.__({phrase:"daily_forecast_message",locale:lang},{...msgParams,cityName:""});
         const forecastMessage = (days, showCity) => {
             const lines = forecastFor(days);
             const template = showCity ? forecastTemplate : hiddenForecast;
