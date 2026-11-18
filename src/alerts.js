@@ -17,6 +17,12 @@ function installWeatherAlerts(bot, mongoose, UserModel) {
   const queued = new Set();
   const HOUR = 3600000;
   const types = ['tempestade','chuva intensa','ventos fortes'];
+  const commands = (text) => esc(text).replace(/(\/\w+(?:\s+\d+)?(?:\s+(?:chuva|vento|tempestade)\s+(?:on|off))?)/g, '<code>$1</code>');
+  const html = { parse_mode: 'HTML' };
+  const settings = (docs, start = 1) => docs.map((d,i) =>
+    '<b>'+(start+i)+'. 📍 '+esc(label(d))+'</b>\n' +
+    types.map((key,j)=>['⛈️','🌧️','💨'][j]+' '+esc(t('pt', ['stormType','rainType','windType'][j]))+': <b>'+(d.preferences?.[key]===false?'OFF':'ON')+'</b>').join(' · ')
+  ).join('\n\n');
   const defaultPrefs = () => ({'tempestade':true,'chuva intensa':true,'ventos fortes':true});
   const severity = h => h.type==='tempestade' ? (h.code===99?'high':'moderate') : h.type==='chuva intensa' ? (h.rain>=50?'high':'moderate') : (h.gust>=100?'high':'moderate');
   const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -37,7 +43,7 @@ function installWeatherAlerts(bot, mongoose, UserModel) {
     if (msg.chat.type !== 'private') return;
     const lang = await localeFor(msg.from.id);
     const input = (match[1] || '').trim().slice(0, 120);
-    if (input.length < 2) return say(msg.chat.id, '🌦️ <b>'+esc(t(lang,'intro'))+'</b>\n\n'+esc(t(lang,'usage'))+'\n🌍 '+esc(t(lang,'worldwide'))+'\n📋 '+esc(t(lang,'manage')), {parse_mode:'HTML'});
+    if (input.length < 2) return say(msg.chat.id, '🌦️ <b>'+esc(t(lang,'intro'))+'</b>\n\n'+commands(t(lang,'usage'))+'\n\n🌍 '+esc(t(lang,'worldwide'))+'\n📋 '+commands(t(lang,'manage')), {parse_mode:'HTML'});
     try {
       const data = await fetch('https://geocoding-api.open-meteo.com/v1/search', {name:input.split(',')[0].trim(),count:5,language:lang,format:'json'});
       const found = (data.results || []).filter(p => Number.isFinite(p.latitude) && Number.isFinite(p.longitude));
@@ -65,7 +71,7 @@ function installWeatherAlerts(bot, mongoose, UserModel) {
       const count = await subs.countDocuments({userID:q.from.id,enabled:true});
       if (count >= 3) return say(q.from.id,'⚠️ '+t(lang,'limit'));
       await subs.updateOne({userID:q.from.id,locationId:p.id},{$set:{userID:q.from.id,locationId:p.id,chatId:q.from.id,enabled:true,name:p.name,admin1:p.admin1||'',country:p.country||'',latitude:p.latitude,longitude:p.longitude,timezone:p.timezone||'UTC',preferences:old?.preferences||defaultPrefs(),updatedAt:new Date()}},{upsert:true});
-      return say(q.from.id,'🔔 <b>'+esc(t(lang,'enabled'))+'</b>\n\n📍 '+esc(label(p))+'\n⛈️ '+esc(t(lang,'events'))+'\n\nℹ️ '+esc(t(lang,'unofficial'))+'\n📋 '+esc(t(lang,'manage')),{parse_mode:'HTML'});
+      return say(q.from.id,'🔔 <b>'+esc(t(lang,'enabled'))+'</b>\n\n📍 '+esc(label(p))+'\n⛈️ '+esc(t(lang,'events'))+'\n\nℹ️ '+esc(t(lang,'unofficial'))+'\n📋 '+commands(t(lang,'manage')),{parse_mode:'HTML'});
     } catch(e) {console.error('[alertas] Cadastro:',e.message);return say(q.from.id,'⚠️ '+t(lang,'saveError'));}
   });
   bot.onText(/^\/alertas(?:@\w+)?\s*$/i, async msg => {
@@ -74,7 +80,7 @@ function installWeatherAlerts(bot, mongoose, UserModel) {
     try {
       const docs = await subs.find({userID:msg.from.id,enabled:true}).sort({name:1}).toArray();
       if (!docs.length) return say(msg.chat.id,'🔕 '+t(lang,'empty'));
-      return say(msg.chat.id,'🔔 <b>'+esc(t(lang,'monitored'))+'</b>\n\n'+docs.map((d,i)=>(i+1)+'. 📍 '+esc(label(d))).join('\n')+'\n\n'+esc(t(lang,'removeHelp')),{parse_mode:'HTML'});
+      return say(msg.chat.id,'🔔 <b>'+esc(t(lang,'monitored'))+'</b>\n\n'+docs.map((d,i)=>(i+1)+'. 📍 '+esc(label(d))).join('\n')+'\n\n'+commands(t(lang,'removeHelp')),{parse_mode:'HTML'});
     } catch(e) {console.error('[alertas] Lista:',e.message);}
   });
   bot.onText(/^\/removeralerta(?:@\w+)?(?:\s+(\d+))?\s*$/i, async (msg,match) => {
@@ -87,7 +93,7 @@ function installWeatherAlerts(bot, mongoose, UserModel) {
       const d = docs[n-1];
       if (!d) return say(msg.chat.id,t(lang,'removeNotFound'));
       await subs.updateOne({_id:d._id,userID:msg.from.id},{$set:{enabled:false,updatedAt:new Date()}});
-      return say(msg.chat.id,'🔕 '+t(lang,'disabled')+' '+d.name+'.');
+      return say(msg.chat.id,'🔕 <b>'+esc(t(lang,'disabled'))+'</b>\n📍 '+esc(label(d)),html);
     } catch(e) {console.error('[alertas] Remover:',e.message);}
   });
   bot.onText(/^\/configalertas(?:@\w+)?(?:\s+(\d+)(?:\s+(tempestade|chuva|vento)\s+(on|off))?)?\s*$/i, async (msg,match) => {
@@ -100,8 +106,18 @@ function installWeatherAlerts(bot, mongoose, UserModel) {
       await subs.updateOne({_id:docs[n-1]._id,userID:msg.from.id},{$set:{['preferences.'+type]:match[3].toLowerCase()==='on',updatedAt:new Date()}});
     }
     const updated=await subs.find({userID:msg.from.id,enabled:true}).sort({name:1}).toArray();
-    const shown=Number.isInteger(n)&&n>=1&&n<=updated.length ? [updated[n-1]] : updated;
-    return say(msg.chat.id,'⚙️ '+t(lang,'monitored')+'\n'+shown.map((d,i)=> (Number.isInteger(n)&&n>=1&&n<=updated.length?n:i+1)+'. '+label(d)+'\n'+types.map((key,j)=>['⛈️','🌧️','💨'][j]+' '+key+': '+(d.preferences?.[key]===false?'OFF':'ON')).join(' · ')).join('\n')+'\n\n/configalertas 1 chuva off\n/configalertas 1 vento on');
+    const valid=Number.isInteger(n)&&n>=1&&n<=updated.length;
+    const shown=valid ? [updated[n-1]] : updated;
+    const title='⚙️ <b>'+esc(t(lang,'monitored'))+'</b>';
+    const details=shown.map((d,i)=>
+      '<b>'+(valid?n:i+1)+'. 📍 '+esc(label(d))+'</b>\n'+
+      types.map((key,j)=>['⛈️','🌧️','💨'][j]+' '+esc(t(lang,['stormType','rainType','windType'][j]))+': <b>'+(d.preferences?.[key]===false?'OFF':'ON')+'</b>').join(' · ')
+    ).join('\n\n');
+    const confirmation=type && valid
+      ? '✅ <b>'+(match[3].toLowerCase()==='on' ? (lang==='pt'?'Ativado':'Enabled') : (lang==='pt'?'Desativado':'Disabled'))+'</b>: '+esc(t(lang,{tempestade:'stormType','chuva intensa':'rainType','ventos fortes':'windType'}[type]))+' — '+esc(label(updated[n-1]))+'\n\n'
+      : '';
+    const examples='\n\n<code>/configalertas 1 chuva off</code>\n<code>/configalertas 1 vento on</code>';
+    return say(msg.chat.id,confirmation+title+'\n\n'+details+examples,html);
   });
   function detect(data) {
     const h=data.hourly||{}, now=Date.now(), hits=new Map();
