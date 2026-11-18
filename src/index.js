@@ -142,7 +142,8 @@ async function getWeatherData(cityName) {
             latitude,
             longitude,
             current: "temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,wind_gusts_10m,uv_index",
-            daily: "weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_probability_max,uv_index_max",
+            daily: "weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_probability_max,precipitation_sum,uv_index_max",
+            hourly: "precipitation_probability",
             wind_speed_unit: "kmh",
             timezone: timezone || "auto",
             forecast_days: 8,
@@ -151,7 +152,16 @@ async function getWeatherData(cityName) {
     });
 
     const d = weatherRes.data;
-    return {
+    // Air quality is optional: weather forecasts must still work when AQI is unavailable.
+    let airQuality = null;
+    try {
+        const air = await axios.get("https://air-quality-api.open-meteo.com/v1/air-quality", {
+            params:{latitude,longitude,current:"us_aqi",timezone:timezone||"auto"},timeout:4000,
+        });
+        const value = air.data?.current?.us_aqi;
+        if (Number.isFinite(value)) airQuality = value;
+    } catch (e) { console.warn("[weather] AQI unavailable:",e.message); }
+    return {airQuality,
         city: name,
         countryCode: country_code || "",
         timezone: timezone || "UTC",
@@ -175,6 +185,7 @@ async function getWeatherData(cityName) {
             tempMax: Math.round(d.daily.temperature_2m_max[i + 1]),
             tempMin: Math.round(d.daily.temperature_2m_min[i + 1]),
             precipProbability: d.daily.precipitation_probability_max[i + 1] ?? 0,
+            precipMm: d.daily.precipitation_sum?.[i + 1] ?? null,
             uvIndexMax: parseFloat((d.daily.uv_index_max[i + 1] || 0).toFixed(1)),
         })),
     };
@@ -226,6 +237,11 @@ bot.on("inline_query", async (query) => {
         const now = new Date();
         const horarioFormatado = now.toLocaleTimeString(lang, { timeZone: weather.timezone });
 
+        const aqi = weather.airQuality;
+        const aqiLabel = aqi===null ? null : aqi<=50 ? "🟢 Good" : aqi<=100 ? "🟡 Moderate" : aqi<=150 ? "🟠 Unhealthy for sensitive groups" : aqi<=200 ? "🔴 Unhealthy" : aqi<=300 ? "🟣 Very unhealthy" : "⚫ Hazardous";
+        const aqiLine = aqi===null ? "" : "\\n🌫 AQI (US): "+aqi+" — "+aqiLabel+(aqi>100?"\\n⚠️ Sensitive groups should limit prolonged outdoor activity.":"");
+        const tomorrow=forecast[0];
+        const summary = tomorrow ? (tomorrow.precipProbability>=70 ? "🌧️ Tomorrow: high chance of rain" : tomorrow.precipProbability>=40 ? "🌦️ Tomorrow: possible rain" : "🌤️ Tomorrow: lower chance of rain") + " ("+tomorrow.precipProbability+"%)." : "";
         const forecastFor = (days) => forecast.slice(0, days).map(day => {
             const de = getWeatherEmoji(day.weatherCode);
             const dateStr = new Date(day.date + "T12:00:00Z").toLocaleDateString(lang, { timeZone:"UTC",month: "short", day: "numeric" });
@@ -236,7 +252,7 @@ bot.on("inline_query", async (query) => {
                 tempMax: day.tempMax,
                 precipProbability: day.precipProbability,
                 uvIndexMax: day.uvIndexMax,
-            });
+            }) + (day.precipMm===null ? "" : " | 💧 "+day.precipMm+" mm");
         }).join("\n");
 
         const msgParams = {
@@ -268,21 +284,21 @@ bot.on("inline_query", async (query) => {
             const oldLines = msgParams.forecastLines;
             // Replace only the forecast block, not any user-controlled text.
             const withDays = days === 7 ? template.replace(/3([ -]?)(day|dias|jours|Tage|giorni|дн|дн|gün|दिन|أيام|hari|روز)/i, (_,sep,unit)=>'7'+sep+unit) : template;
-            return withDays.replace(oldLines, lines);
+            return withDays.replace(oldLines, lines)+"\n\n"+summary+aqiLine;
         };
         const results = [
             {
                 type:"article", id:"1",
                 title:i18n.__({phrase:"title_message_hidden",locale:lang}),
                 description:i18n.__({phrase:"description_hidden",locale:lang},{cityName:city,countryCode}),
-                input_message_content:{message_text:i18n.__({phrase:"weather_forecast_message",locale:lang},msgParams),parse_mode:"Markdown"},
+                input_message_content:{message_text:i18n.__({phrase:"weather_forecast_message",locale:lang},msgParams)+aqiLine,parse_mode:"Markdown"},
                 thumbnail_url:iconUrl,
             },
             {
                 type:"article", id:"2",
                 title:i18n.__({phrase:"title_message_visible",locale:lang}),
                 description:i18n.__({phrase:"description_visible",locale:lang},{cityName:city,countryCode}),
-                input_message_content:{message_text:i18n.__({phrase:"city_weather_forecast_message",locale:lang},msgParams),parse_mode:"Markdown"},
+                input_message_content:{message_text:i18n.__({phrase:"city_weather_forecast_message",locale:lang},msgParams)+aqiLine,parse_mode:"Markdown"},
                 thumbnail_url:iconUrl,
             },
             ...[3,7].flatMap(days => [false,true].map(showCity => ({
