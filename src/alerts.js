@@ -1,7 +1,7 @@
 'use strict';
 const axios = require('axios');
 const crypto = require('crypto');
-const { t } = require('./alerts-locales');
+const { t, status } = require('./alerts-locales');
 
 function installWeatherAlerts(bot, mongoose, UserModel) {
   // Use the same language preference as the main bot, with English fallback.
@@ -107,10 +107,10 @@ function installWeatherAlerts(bot, mongoose, UserModel) {
     const title='⚙️ <b>'+esc(t(lang,'monitored'))+'</b>';
     const details=shown.map((d,i)=>
       '<b>'+(valid?n:i+1)+'. 📍 '+esc(label(d))+'</b>\n\n'+
-      types.map((key,j)=>['⛈️','🌧️','💨'][j]+' '+esc(t(lang,['stormType','rainType','windType'][j]))+': <b>'+(d.preferences?.[key]===false?'OFF':'ON')+'</b>').join('\n')
+      types.map((key,j)=>['⛈️','🌧️','💨'][j]+' '+esc(t(lang,['stormType','rainType','windType'][j]))+': <b>'+esc(status(lang,d.preferences?.[key]!==false))+'</b>').join('\n')
     ).join('\n\n');
     const confirmation=type && valid
-      ? '✅ <b>'+(match[3].toLowerCase()==='on' ? (lang==='pt'?'Ativado':'Enabled') : (lang==='pt'?'Desativado':'Disabled'))+'</b>: '+esc(t(lang,{tempestade:'stormType','chuva intensa':'rainType','ventos fortes':'windType'}[type]))+' — '+esc(label(updated[n-1]))+'\n\n'
+      ? '✅ <b>'+esc(status(lang,match[3].toLowerCase()==='on'))+'</b>: '+esc(t(lang,{tempestade:'stormType','chuva intensa':'rainType','ventos fortes':'windType'}[type]))+' — '+esc(label(updated[n-1]))+'\n\n'
       : '';
     const examples='\n\n<code>/configalertas 1 chuva off</code>\n<code>/configalertas 1 vento on</code>';
     return say(msg.chat.id,confirmation+title+'\n\n'+details+examples,html);
