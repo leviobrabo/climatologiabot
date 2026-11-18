@@ -53,7 +53,7 @@ test('command handlers work with simulated Telegram, database and geocoding', as
   const subs={
     findOne:async q=>subscriptions.find(d=>Object.entries(q).every(([k,v])=>d[k]===v)),
     countDocuments:async q=>subscriptions.filter(d=>d.userID===q.userID&&d.enabled).length,
-    updateOne:async(q,u)=>{let d=subscriptions.find(x=>x.userID===q.userID&&x.locationId===q.locationId);if(!d){d={_id:subscriptions.length+1};subscriptions.push(d);}Object.assign(d,u.$set);},
+    updateOne:async(q,u)=>{let d=subscriptions.find(x=>q._id!==undefined?x._id===q._id&&x.userID===q.userID:x.userID===q.userID&&x.locationId===q.locationId);if(!d){d={_id:subscriptions.length+1};subscriptions.push(d);}Object.assign(d,u.$set);},
     find:q=>({sort:()=>({toArray:async()=>subscriptions.filter(d=>d.userID===q.userID&&d.enabled).sort((a,b)=>a.name.localeCompare(b.name))})}),
     createIndex:async()=>{}
   };
