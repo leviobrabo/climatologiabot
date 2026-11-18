@@ -3,11 +3,10 @@ const axios = require('axios');
 const crypto = require('crypto');
 const { t } = require('./alerts-locales');
 
-function installWeatherAlerts(bot, mongoose) {
-  const users = mongoose.connection.collection('users');
+function installWeatherAlerts(bot, mongoose, UserModel) {
   // Use the same language preference as the main bot, with English fallback.
   async function localeFor(id) {
-    try { const u = await users.findOne({ userID: id }); return u?.lang || 'en'; }
+    try { const u = await UserModel.findOne({ userID: id }).lean(); return u?.lang || 'en'; }
     catch { return 'en'; }
   }
   const subs = mongoose.connection.collection('weather_alert_subscriptions');
