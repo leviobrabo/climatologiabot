@@ -267,7 +267,8 @@ bot.on("inline_query", async (query) => {
             const template = showCity ? forecastTemplate : hiddenForecast;
             const oldLines = msgParams.forecastLines;
             // Replace only the forecast block, not any user-controlled text.
-            return template.replace(oldLines, lines);
+            const withDays = days === 7 ? template.replace(/3([ -]?)(day|dias|jours|Tage|giorni|дн|дн|gün|दिन|أيام|hari|روز)/i, (_,sep,unit)=>'7'+sep+unit) : template;
+            return withDays.replace(oldLines, lines);
         };
         const results = [
             {
