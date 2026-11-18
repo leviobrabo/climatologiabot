@@ -1,6 +1,9 @@
 'use strict';
 const axios = require('axios');
 const crypto = require('crypto');
+const i18n = require('i18n');
+const SUPPORTED = new Set(['en','pt','ru','es','fr','hi','it','tr','uk','de','ar','id','fa']);
+const t = (lang, key, values = {}) => i18n.__({ phrase: 'alert_' + key, locale: SUPPORTED.has(lang) ? lang : 'en' }, values);
 
 function installWeatherAlerts(bot, mongoose) {
   const subs = mongoose.connection.collection('weather_alert_subscriptions');
@@ -10,6 +13,7 @@ function installWeatherAlerts(bot, mongoose) {
   const queue = [];
   const queued = new Set();
   const HOUR = 3600000;
+  const language = async userID => { try { const u = await mongoose.connection.collection('users').findOne({userID}, {projection:{lang:1}}); return SUPPORTED.has(u?.lang) ? u.lang : 'en'; } catch { return 'en'; } };
   const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const wait = ms => new Promise(r => setTimeout(r, ms));
   const label = p => [p.name, p.admin1, p.country].filter(Boolean).join(', ');
@@ -26,17 +30,18 @@ function installWeatherAlerts(bot, mongoose) {
   }
   bot.onText(/^\/alerta(?:@\w+)?(?:\s+(.+))?$/i, async (msg, match) => {
     if (msg.chat.type !== 'private') return;
+    const lang = await language(msg.from.id);
     const input = (match[1] || '').trim().slice(0, 120);
-    if (input.length < 2) return say(msg.chat.id, '🌦️ <b>Alertas opcionais</b>\n\nUse <code>/alerta Salvador</code> e escolha sua cidade.\n🌍 Disponível mundialmente.\n🔔 Somente inscritos recebem avisos.\n📋 /alertas — gerenciar inscrições.', {parse_mode:'HTML'});
+    if (input.length < 2) return say(msg.chat.id, esc(t(lang,'intro')), {parse_mode:'HTML'});
     try {
       // The geocoder works best with the primary city name; region/country appear in the choices.
-      const data = await fetch('https://geocoding-api.open-meteo.com/v1/search', {name:input.split(',')[0].trim(),count:5,language:'pt',format:'json'});
+      const data = await fetch('https://geocoding-api.open-meteo.com/v1/search', {name:input.split(',')[0].trim(),count:5,language:lang,format:'json'});
       const found = (data.results || []).filter(p => Number.isFinite(p.latitude) && Number.isFinite(p.longitude));
-      if (!found.length) return say(msg.chat.id, '🔎 Cidade não encontrada. Tente somente o nome principal.');
+      if (!found.length) return say(msg.chat.id, t(lang,'notfound'));
       const nonce = crypto.randomBytes(6).toString('hex');
       choices.set(msg.from.id + ':' + nonce, {found, expires:Date.now()+600000});
-      return say(msg.chat.id, '📍 <b>Selecione a localidade correta:</b>', {parse_mode:'HTML',reply_markup:{inline_keyboard:found.map((p,i)=>[{text:label(p).slice(0,60),callback_data:'wa:add:'+nonce+':'+i}])}});
-    } catch(e) {console.error('[alertas] Geocoding:',e.message);return say(msg.chat.id,'⚠️ Busca indisponível. Tente novamente mais tarde.');}
+      return say(msg.chat.id, esc(t(lang,'select')), {parse_mode:'HTML',reply_markup:{inline_keyboard:found.map((p,i)=>[{text:label(p).slice(0,60),callback_data:'wa:add:'+nonce+':'+i}])}});
+    } catch(e) {console.error('[alertas] Geocoding:',e.message);return say(msg.chat.id,t(lang,'lookupfail'));}
   });
   bot.on('callback_query', async q => {
     if (!q.data || !q.data.startsWith('wa:add:')) return;
@@ -45,37 +50,40 @@ function installWeatherAlerts(bot, mongoose) {
     const [, , nonce, index] = q.data.split(':');
     if (!/^\d$/.test(index)) return;
     const key = q.from.id+':'+nonce, pending = choices.get(key);
-    if (!pending || pending.expires < Date.now()) return say(q.from.id,'⌛ Pesquisa expirada. Use /alerta novamente.');
+    if (!pending || pending.expires < Date.now()) return say(q.from.id,t(await language(q.from.id),'expired'));
+    const lang = await language(q.from.id);
     const p = pending.found[Number(index)];
     if (!p) return;
     choices.delete(key);
     try {
       const old = await subs.findOne({userID:q.from.id,locationId:p.id});
-      if (old?.enabled) return say(q.from.id,'✅ Você já monitora '+esc(label(p)),{parse_mode:'HTML'});
+      if (old?.enabled) return say(q.from.id,t(lang,'already',{city:label(p)}),{parse_mode:'HTML'});
       const count = await subs.countDocuments({userID:q.from.id,enabled:true});
-      if (count >= 3) return say(q.from.id,'⚠️ Limite de três cidades. Use /removeralerta.');
-      await subs.updateOne({userID:q.from.id,locationId:p.id},{$set:{userID:q.from.id,locationId:p.id,chatId:q.from.id,enabled:true,name:p.name,admin1:p.admin1||'',country:p.country||'',latitude:p.latitude,longitude:p.longitude,updatedAt:new Date()}},{upsert:true});
-      return say(q.from.id,'🔔 <b>Alertas ativados!</b>\n\n📍 '+esc(label(p))+'\n⛈️ Tempestades, chuva intensa e ventos fortes.\n\nℹ️ Avisos preventivos de previsão, não oficiais.\n📋 /alertas para gerenciar.',{parse_mode:'HTML'});
-    } catch(e) {console.error('[alertas] Cadastro:',e.message);return say(q.from.id,'⚠️ Não consegui salvar a inscrição.');}
+      if (count >= 3) return say(q.from.id,t(lang,'limit'));
+      await subs.updateOne({userID:q.from.id,locationId:p.id},{$set:{userID:q.from.id,locationId:p.id,chatId:q.from.id,enabled:true,name:p.name,admin1:p.admin1||'',country:p.country||'',latitude:p.latitude,longitude:p.longitude,timezone:p.timezone||'UTC',updatedAt:new Date()}},{upsert:true});
+      return say(q.from.id,esc(t(lang,'enabled',{city:label(p)})),{parse_mode:'HTML'});
+    } catch(e) {console.error('[alertas] Cadastro:',e.message);return say(q.from.id,t(lang,'savefail'));}
   });
   bot.onText(/^\/alertas(?:@\w+)?\s*$/i, async msg => {
     if (msg.chat.type !== 'private') return;
+    const lang = await language(msg.from.id);
     try {
       const docs = await subs.find({userID:msg.from.id,enabled:true}).sort({name:1}).toArray();
-      if (!docs.length) return say(msg.chat.id,'🔕 Nenhuma cidade monitorada.\n\nUse /alerta Salvador.');
-      return say(msg.chat.id,'🔔 <b>Cidades monitoradas</b>\n\n'+docs.map((d,i)=>(i+1)+'. 📍 '+esc(label(d))).join('\n')+'\n\nCancelar: <code>/removeralerta 1</code>',{parse_mode:'HTML'});
+      if (!docs.length) return say(msg.chat.id,t(lang,'empty'));
+      return say(msg.chat.id,'🔔 <b>'+esc(t(lang,'listtitle'))+'</b>\n\n'+docs.map((d,i)=>(i+1)+'. 📍 '+esc(label(d))).join('\n')+'\n\n'+esc(t(lang,'removehint')),{parse_mode:'HTML'});
     } catch(e) {console.error('[alertas] Lista:',e.message);}
   });
   bot.onText(/^\/removeralerta(?:@\w+)?(?:\s+(\d+))?\s*$/i, async (msg,match) => {
     if (msg.chat.type !== 'private') return;
+    const lang = await language(msg.from.id);
     const n = Number(match[1]);
-    if (!Number.isInteger(n) || n<1 || n>3) return say(msg.chat.id,'Use /alertas e depois /removeralerta 1.');
+    if (!Number.isInteger(n) || n<1 || n>3) return say(msg.chat.id,t(lang,'removeusage'));
     try {
       const docs = await subs.find({userID:msg.from.id,enabled:true}).sort({name:1}).toArray();
       const d = docs[n-1];
-      if (!d) return say(msg.chat.id,'Cidade não encontrada. Use /alertas.');
+      if (!d) return say(msg.chat.id,t(lang,'missing'));
       await subs.updateOne({_id:d._id,userID:msg.from.id},{$set:{enabled:false,updatedAt:new Date()}});
-      return say(msg.chat.id,'🔕 Alertas desativados para '+d.name+'.');
+      return say(msg.chat.id,t(lang,'removed',{city:d.name}));
     } catch(e) {console.error('[alertas] Remover:',e.message);}
   });
   function detect(data) {
@@ -85,21 +93,27 @@ function installWeatherAlerts(bot, mongoose) {
       if (!Number.isFinite(at) || at<now-1800000 || at>now+3*HOUR) continue;
       const code=h.weather_code?.[i], rain=h.precipitation?.[i]||0, gust=h.wind_gusts_10m?.[i]||0;
       for (const x of [[ [95,96,99].includes(code),'tempestade','⛈️','Trovoadas previstas'],[rain>=20,'chuva intensa','🌧️',Math.round(rain)+' mm/h previstos'],[gust>=75,'ventos fortes','💨','Rajadas de '+Math.round(gust)+' km/h previstas']]) {
-        if (x[0] && !hits.has(x[1])) hits.set(x[1],{type:x[1],emoji:x[2],detail:x[3],at});
+        if (x[0] && !hits.has(x[1])) hits.set(x[1],{type:x[1],emoji:x[2],detail:x[3],value:x[1]==='chuva intensa'?Math.round(rain):Math.round(gust),at});
       }
     }
     return [...hits.values()];
   }
-  function message(city, h) {
-    const when=new Date(h.at).toLocaleString('pt-BR',{timeZone:'UTC',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
-    return h.emoji+' <b>AVISO PREVENTIVO — '+esc(h.type.toUpperCase())+'</b>\n\n📍 <b>'+esc(city)+'</b>\n🕒 Previsão: '+when+' UTC\n🌦️ '+esc(h.detail)+'\n\n⚠️ Evite áreas de risco e acompanhe a Defesa Civil local.\n\nℹ️ Previsão automatizada Open-Meteo. <b>Não é alerta oficial.</b>\n🔕 Gerencie em /alertas';
+  function message(city, h, lang, timezone) {
+    const tz = timezone || 'UTC';
+    let when;
+    try { when = new Date(h.at).toLocaleString(lang === 'pt' ? 'pt-BR' : lang, {timeZone:tz,day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); }
+    catch { when = new Date(h.at).toISOString(); }
+    const typeKey = {tempestade:'storm','chuva intensa':'rain','ventos fortes':'wind'}[h.type] || 'storm';
+    const detail = typeKey === 'storm' ? t(lang,'detail_storm') : t(lang,'detail_'+typeKey,{value:h.value});
+    return h.emoji+' <b>'+esc(t(lang,'notice',{type:t(lang,'type_'+typeKey)}))+'</b>\n\n📍 <b>'+esc(city)+'</b>\n🕒 '+esc(t(lang,'forecast',{time:when+' ('+tz+')'}))+'\n🌦️ '+esc(detail)+'\n\n'+esc(t(lang,'advice'))+'\n\n'+esc(t(lang,'disclaimer'))+'\n'+esc(t(lang,'manage'));
+
   }
   async function scan() {
     if (scanning || mongoose.connection.readyState!==1) return;
     scanning=true;
     try {
       // Paginate cities fairly; unlike a fixed limit, no city is permanently starved.
-      const locations=await subs.aggregate([{$match:{enabled:true}},{$group:{_id:'$locationId',name:{$first:'$name'},admin1:{$first:'$admin1'},country:{$first:'$country'},latitude:{$first:'$latitude'},longitude:{$first:'$longitude'}}},{$sort:{_id:1}}]).toArray();
+      const locations=await subs.aggregate([{$match:{enabled:true}},{$group:{_id:'$locationId',name:{$first:'$name'},admin1:{$first:'$admin1'},country:{$first:'$country'},latitude:{$first:'$latitude'},longitude:{$first:'$longitude'},timezone:{$first:'$timezone'}}},{$sort:{_id:1}}]).toArray();
       if (!locations.length) return;
       const batch=locations.slice(cursor,cursor+300);
       cursor=cursor+batch.length>=locations.length?0:cursor+batch.length;
@@ -115,7 +129,7 @@ function installWeatherAlerts(bot, mongoose) {
             const id=sub.userID+':'+loc._id+':'+h.type+':'+bucket;
             if(queued.has(id)) continue;
             queued.add(id);
-            queue.push({id,sub,city:label(loc),hit:h});
+            queue.push({id,sub,city:label(loc),hit:h,timezone:loc.timezone||'UTC'});
           }
         } catch(e) {console.error('[alertas] API:',loc._id,e.message);}
       }
@@ -131,7 +145,7 @@ function installWeatherAlerts(bot, mongoose) {
       // Atomic dedup persists across restarts. A failed send is logged, never silently retried forever.
       const claim=await notices.updateOne({_id:item.id},{$setOnInsert:{createdAt:new Date()}},{upsert:true});
       if (!claim.upsertedCount) return;
-      try { await bot.sendMessage(active.chatId||active.userID,message(item.city,item.hit),{parse_mode:'HTML',disable_web_page_preview:true}); }
+      try { await bot.sendMessage(active.chatId||active.userID,message(item.city,item.hit,await language(active.userID),item.timezone),{parse_mode:'HTML',disable_web_page_preview:true}); }
       catch(e) {
         if(e.response?.statusCode===403) await subs.updateMany({userID:active.userID},{$set:{enabled:false}});
         console.error('[alertas] Envio:',e.message);
