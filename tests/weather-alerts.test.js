@@ -100,7 +100,7 @@ test('new features: seven days, privacy, air quality, summary, severity, and pre
   assert.match(inline,/forecast_days: 8/);
   assert.match(inline,/slice\(1, 8\)/);
   assert.match(inline,/\[3,7\]\.flatMap/);
-  assert.match(inline,/cityName:""/);
+  assert.match(inline,/message_text:currentMessage\(false\),parse_mode:"HTML"/);
   assert.match(inline,/air-quality-api\.open-meteo\.com/);
   assert.match(inline,/us_aqi/);
   assert.match(inline,/tomorrow\.precipProbability/);
